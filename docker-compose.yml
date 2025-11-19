@@ -1,0 +1,35 @@
+version: "3.9"
+
+services:
+  db:
+    image: postgres:16
+    container_name: codscrims_db
+    environment:
+      POSTGRES_DB: codscrims
+      POSTGRES_USER: codscrims
+      POSTGRES_PASSWORD: codscrims
+    ports:
+      - "5432:5432"
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: codscrims_web
+    ports:
+      - "3000:3000"
+    environment:
+      DATABASE_URL: "postgresql://codscrims:codscrims@db:5432/codscrims"
+      NODE_ENV: development
+      NEXT_TELEMETRY_DISABLED: "1"
+      HOSTNAME: "0.0.0.0"
+    depends_on:
+      - db
+    volumes:
+      - .:/app
+      - /app/node_modules
+
+volumes:
+  db_data:
