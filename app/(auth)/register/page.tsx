@@ -8,7 +8,7 @@ export default function RegisterPage() {
           Create Your Account
         </h1>
         <p className="text-center text-gray-600 text-sm">
-          Join Revenge Queues and start creating teams, scrims, and more.
+          Join Revenge Queues and start creating/joining teams, scrims, and more.
         </p>
 
         <RegisterForm />
