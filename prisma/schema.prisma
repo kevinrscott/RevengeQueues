@@ -1,0 +1,159 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           Int      @id @default(autoincrement())
+  username     String
+  email        String   @unique
+  passwordHash String
+  phoneNumber  String?
+  dob          DateTime
+  createdAt    DateTime @default(now())
+
+  // Relations
+  profiles            UserGameProfile[]
+  memberships         TeamMembership[]
+  teamRequestsAsUser  TeamRequest[]     @relation("TeamRequestUser")
+  teamRequestsCreated TeamRequest[]     @relation("TeamRequestCreatedBy")
+  scrimRequests       ScrimRequest[]    @relation("ScrimRequestRequestedBy")
+}
+
+model Game {
+  id        Int    @id @default(autoincrement())
+  name      String
+  shortCode String
+
+  // Relations
+  profiles UserGameProfile[]
+  teams    Team[]
+}
+
+model UserGameProfile {
+  id         Int    @id @default(autoincrement())
+  ingameName String
+  rank       String?
+  wins       Int    @default(0)
+  losses     Int    @default(0)
+
+  // FKs
+  userId Int
+  gameId Int
+
+  // Relations
+  user User @relation(fields: [userId], references: [id])
+  game Game @relation(fields: [gameId], references: [id])
+
+  @@index([userId])
+  @@index([gameId])
+  @@unique([userId, gameId], name: "user_game_unique") // one profile per user+game
+}
+
+model Team {
+  id        Int      @id @default(autoincrement())
+  name      String
+  region    String
+  logoUrl   String?
+  bio       String?
+  createdAt DateTime @default(now())
+
+  // FKs
+  gameId Int
+
+  // Relations
+  game          Game            @relation(fields: [gameId], references: [id])
+  memberships   TeamMembership[]
+  requests      TeamRequest[]
+  hostedScrims  Scrim[]
+  scrimRequests ScrimRequest[]
+
+  @@index([gameId])
+}
+
+model TeamMembership {
+  id       Int      @id @default(autoincrement())
+  role     String
+  joinedAt DateTime @default(now())
+
+  // FKs
+  userId Int
+  teamId Int
+
+  // Relations
+  user User @relation(fields: [userId], references: [id])
+  team Team @relation(fields: [teamId], references: [id])
+
+  @@index([userId])
+  @@index([teamId])
+  @@unique([userId, teamId], name: "user_team_unique") // can't join same team twice
+}
+
+model TeamRequest {
+  id             Int      @id @default(autoincrement())
+  kind           String   // e.g. "invite" or "join_request"
+  status         String   // e.g. "pending", "accepted", "rejected"
+  createdAt      DateTime @default(now())
+  respondedAt    DateTime?
+
+  // FKs
+  teamId          Int
+  userId          Int
+  createdByUserId Int
+
+  // Relations
+  team      Team @relation(fields: [teamId], references: [id])
+  user      User @relation("TeamRequestUser", fields: [userId], references: [id])
+  createdBy User @relation("TeamRequestCreatedBy", fields: [createdByUserId], references: [id])
+
+  @@index([teamId])
+  @@index([userId])
+  @@index([createdByUserId])
+}
+
+model Scrim {
+  id          Int      @id @default(autoincrement())
+  bestOf      Int      // best_of
+  gamemode    String
+  map         String
+  scrimCode   String
+  scheduledAt DateTime?
+  status      String
+  createdAt   DateTime @default(now())
+
+  // FKs
+  hostTeamId Int
+
+  // Relations
+  hostTeam Team           @relation(fields: [hostTeamId], references: [id])
+  requests ScrimRequest[]
+
+  @@index([hostTeamId])
+  @@unique([scrimCode])   // each scrim_code unique
+}
+
+model ScrimRequest {
+  id            Int      @id @default(autoincrement())
+  status        String
+  requestedAt   DateTime @default(now())
+  respondedAt   DateTime?
+  codeSent      Boolean  @default(false)
+
+  // FKs
+  scrimId           Int
+  teamId            Int
+  requestedByUserId Int
+
+  // Relations
+  scrim       Scrim @relation(fields: [scrimId], references: [id])
+  team        Team  @relation(fields: [teamId], references: [id])
+  requestedBy User  @relation("ScrimRequestRequestedBy", fields: [requestedByUserId], references: [id])
+
+  @@index([scrimId])
+  @@index([teamId])
+  @@index([requestedByUserId])
+}
