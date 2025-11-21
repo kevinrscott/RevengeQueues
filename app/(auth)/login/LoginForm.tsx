@@ -40,7 +40,7 @@ export default function LoginForm() {
       return;
     }
 
-    router.push("/profile");
+    router.push("/games");
   }
 
   return (

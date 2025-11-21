@@ -1,10 +1,33 @@
+import { prisma } from "@/app/lib/prisma";
+import GameSelector from "./GamesSelector";
+import { getServerSession } from "next-auth";
+import authOptions from "@/auth.config";
+import { redirect } from "next/navigation";
 
-export default function GamePage() {
+
+export default async function GamePage() {
+const session = await getServerSession(authOptions);
+
+    if (!session) {
+    redirect("/login");
+    }
+    
+  const games = await prisma.game.findMany({
+    orderBy: { name: "asc" },
+  });
+
   return (
     <main className="flex min-h-screen items-center justify-center bg-gradient-to-r from-slate-900 to-cyan-900 p-6 text-white">
+      <div className="bg-white p-8 rounded-xl shadow-2xl max-w-lg w-full text-black space-y-6">
         <h1 className="text-4xl font-bold text-center text-gray-900">
           Select Game
         </h1>
+        <p className="text-center text-gray-600 text-sm">
+          Choose a game where you can manage your game profile, teams, and scrims.
+        </p>
+
+        <GameSelector games={games} />
+      </div>
     </main>
   );
 }

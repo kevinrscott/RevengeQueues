@@ -79,7 +79,18 @@ export default function RegisterForm() {
     e.preventDefault();
     setError(null);
 
-    if (!form.username || !form.email || !form.password || !form.dob) {
+    // 🔹 NEW: trim + length validate username 3–15
+    const trimmedUsername = form.username.trim();
+    if (trimmedUsername.length < 3) {
+      setError("Username must be at least 3 characters long.");
+      return;
+    }
+    if (trimmedUsername.length > 15) {
+      setError("Username must be at most 15 characters long.");
+      return;
+    }
+
+    if (!trimmedUsername || !form.email || !form.password || !form.dob) {
       setError("Please fill in all required fields.");
       return;
     }
@@ -127,7 +138,7 @@ export default function RegisterForm() {
     }
 
     const lowerPwd = pwd.toLowerCase();
-    const lowerUsername = form.username.toLowerCase();
+    const lowerUsername = trimmedUsername.toLowerCase();
     const emailLocal = (form.email.split("@")[0] || "").toLowerCase();
 
     if (lowerUsername && lowerPwd.includes(lowerUsername)) {
@@ -151,7 +162,7 @@ export default function RegisterForm() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          username: form.username,
+          username: trimmedUsername,
           email: form.email,
           password: form.password,
           dob: form.dob,
@@ -163,7 +174,9 @@ export default function RegisterForm() {
       const data = await res.json();
 
       if (!res.ok) {
-        setError(data.error || "Something went wrong while creating your account.");
+        setError(
+          data.error || "Something went wrong while creating your account."
+        );
         return;
       }
 
@@ -194,6 +207,8 @@ export default function RegisterForm() {
             value={form.username}
             onChange={handleChange}
             required
+            minLength={3}
+            maxLength={15}
             className="p-3 rounded border border-gray-300 focus:ring-2 focus:ring-cyan-500 focus:outline-none"
           />
         </div>

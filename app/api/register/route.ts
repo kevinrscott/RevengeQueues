@@ -4,7 +4,7 @@ import bcrypt from "bcryptjs";
 import { prisma } from "@/app/lib/prisma";
 
 const RegisterSchema = z.object({
-  username: z.string().min(3).max(32),
+  username: z.string().min(3).max(15),
   email: z.string().email(),
   password: z.string().min(8),
   dob: z.string(),

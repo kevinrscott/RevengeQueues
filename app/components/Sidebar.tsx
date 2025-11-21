@@ -6,9 +6,9 @@ import { usePathname } from "next/navigation";
 
 const navItems = [
   { href: "/games", label: "Games"},
-  { href: "/teams", label: "Teams" },
+  { href: "/tournaments", label: "Tournaments" },
   { href: "/scrims", label: "Scrims" },
-  { href: "/settings", label: "Settings" },
+  { href: "/lfg", label: "LFG" },
 ];
 
 type SidebarProps = {

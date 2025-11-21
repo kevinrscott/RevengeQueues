@@ -2,17 +2,18 @@ import { getServerSession } from "next-auth";
 import authOptions from "@/auth.config";
 import { redirect } from "next/navigation";
 
-export default async function ProfilePage() {
+export default async function MyProfileRedirectPage() {
   const session = await getServerSession(authOptions);
 
-  if (!session) {
+  if (!session || !session.user) {
     redirect("/login");
   }
 
-  return (
-    <div className="flex min-h-screen items-center justify-center bg-gradient-to-r from-slate-900 to-cyan-900 p-6 text-white">
-      <h1 className="text-xl font-semibold">Profile</h1>
-      <p>Username: {session.user?.name}</p>
-    </div>
-  );
+  const username = (session.user as any).username as string | undefined;
+
+  if (!username) {
+    redirect("/login");
+  }
+
+  redirect(`/profile/${username}`);
 }
