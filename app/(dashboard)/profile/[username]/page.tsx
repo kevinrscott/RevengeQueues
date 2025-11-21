@@ -43,12 +43,10 @@ export default async function ProfilePage({ params }: PageProps) {
   return (
     <main className="min-h-screen bg-gradient-to-r from-slate-900 to-cyan-900 p-6 text-white">
       <div className="w-full max-w-xl max-h-[80vh] border-1 border-black overflow-y-auto rounded-xl bg-stone-900 p-8 shadow-2xl backdrop-blur space-y-6">
-        {/* Header: avatar + username + region + optional Edit button */}
         <div className="flex items-center justify-between gap-4">
           <div className="flex items-center gap-4">
             <div className="h-14 w-14 rounded-full bg-slate-800 overflow-hidden">
               {user.profilePhoto ? (
-                // eslint-disable-next-line @next/next/no-img-element
                 <img
                   src={user.profilePhoto}
                   alt={`${user.username} avatar`}
