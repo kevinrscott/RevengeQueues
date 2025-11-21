@@ -91,7 +91,7 @@ export default async function ProfilePage({ params }: PageProps) {
               <div>
                 <p className="text-slate-400">In-game Name</p>
                 <p className="font-medium">
-                  {activeProfile.ingameName ?? "Unset"}
+                  {activeProfile.ingameName?.trim() || "Not Set"}
                 </p>
               </div>
               <div>

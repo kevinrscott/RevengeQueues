@@ -53,7 +53,6 @@ export default function Topbar() {
 
   const searchRef = useRef<HTMLDivElement>(null);
 
-  // Close search dropdown when clicking outside
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
       if (searchRef.current && !searchRef.current.contains(e.target as Node)) {
@@ -68,7 +67,7 @@ export default function Topbar() {
   useEffect(() => {
     const trimmed = searchTerm.trim();
 
-    if (trimmed.length < 2) {
+    if (trimmed.length < 3) {
       setPlayers([]);
       setTeams([]);
       setSearchOpen(false);
