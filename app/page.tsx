@@ -1,4 +1,13 @@
-export default function Home() {
+import { getServerSession } from "next-auth";
+import authOptions from "@/auth.config";
+import { redirect } from "next/navigation";
+
+export default async function Home() {
+  const session = await getServerSession(authOptions);
+
+  if (session) {
+    redirect("/home");
+  }
   return (
     <main className="flex min-h-screen items-center justify-center bg-gradient-to-r from-slate-900 to-cyan-900 text-white">
       <div className="text-center space-y-8">
