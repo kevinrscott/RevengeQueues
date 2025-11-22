@@ -18,10 +18,10 @@ export default async function EditProfilePage() {
 
   const user = await prisma.user.findUnique({
     where: { id: userId },
-    select: {
-      username: true,
-      region: true,
-      profilePhoto: true,
+    include: {
+      profiles: {
+        take: 1,
+      },
     },
   });
 
@@ -29,14 +29,20 @@ export default async function EditProfilePage() {
     redirect("/login");
   }
 
+  const activeProfile = user.profiles[0] ?? null;
+
   return (
-    <main className="min-h-screen bg-gradient-to-r from-slate-900 to-cyan-900 p-6 text-white">
-      <div className="mx-auto w-full max-w-xl rounded-xl bg-stone-900 p-8 shadow-2xl space-y-6">
-        <h1 className="text-3xl font-bold text-slate-100">Edit Profile</h1>
+    <main className="min-h-screen bg-gradient-to-r from-slate-900 to-cyan-900 p-6 text-white flex items-center justify-center">
+      <div className="w-full max-w-xl rounded-xl bg-stone-900 p-8 shadow-2xl space-y-6">
+        <h1 className="text-3xl font-bold text-slate-100 text-center">
+          Edit Profile
+        </h1>
         <EditProfileForm
           initialUsername={user.username}
           initialRegion={user.region ?? ""}
           initialProfilePhoto={user.profilePhoto ?? ""}
+          initialIngameName={activeProfile?.ingameName ?? ""}
+          initialRank={activeProfile?.rank ?? ""}
         />
       </div>
     </main>

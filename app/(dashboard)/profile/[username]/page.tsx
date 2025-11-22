@@ -45,7 +45,7 @@ export default async function ProfilePage({ params }: PageProps) {
       <div className="w-full max-w-xl max-h-[80vh] border-1 border-black overflow-y-auto rounded-xl bg-stone-900 p-8 shadow-2xl backdrop-blur space-y-6">
         <div className="flex items-center justify-between gap-4">
           <div className="flex items-center gap-4">
-            <div className="h-14 w-14 rounded-full bg-slate-800 overflow-hidden">
+            <div className="h-24 w-24 rounded-full bg-slate-800 overflow-hidden">
               {user.profilePhoto ? (
                 <img
                   src={user.profilePhoto}
@@ -66,6 +66,9 @@ export default async function ProfilePage({ params }: PageProps) {
               <span className="text-sm text-slate-400">
                 {user.region ?? "No region set"}
               </span>
+              <span className="block text-sm text-slate-500">
+                Joined {user.createdAt.toLocaleDateString()}
+              </span>
             </div>
           </div>
 
@@ -80,36 +83,40 @@ export default async function ProfilePage({ params }: PageProps) {
         </div>
 
         {activeProfile ? (
-          <div className="rounded-lg border border-slate-900 bg-stone-800 p-5 space-y-3">
+          <div className="rounded-lg border border-black bg-stone-800 p-6 space-y-4">
             <div className="flex items-center justify-between">
-              <h2 className="text-xl font-semibold">
+              <h2 className="text-2xl font-semibold">
                 {activeProfile.game.name} Profile
               </h2>
             </div>
 
-            <div className="grid grid-cols-2 gap-4 text-sm">
+            <div className="flex justify-between text-base gap-6">
               <div>
                 <p className="text-slate-400">In-game Name</p>
-                <p className="font-medium">
+                <p className="font-semibold text-lg">
                   {activeProfile.ingameName?.trim() || "Not Set"}
                 </p>
               </div>
+
               <div>
                 <p className="text-slate-400">Rank</p>
-                <p className="font-medium">
+                <p className="font-semibold text-lg">
                   {activeProfile.rank ?? "Unranked"}
                 </p>
               </div>
+
               <div>
                 <p className="text-slate-400">Wins</p>
-                <p className="font-medium">{activeProfile.wins}</p>
+                <p className="font-semibold text-lg">{activeProfile.wins}</p>
               </div>
+
               <div>
                 <p className="text-slate-400">Losses</p>
-                <p className="font-medium">{activeProfile.losses}</p>
+                <p className="font-semibold text-lg">{activeProfile.losses}</p>
               </div>
             </div>
           </div>
+
         ) : (
           <div className="rounded-lg border border-slate-700 bg-slate-900/70 p-5 text-sm text-slate-300">
             {isOwnProfile

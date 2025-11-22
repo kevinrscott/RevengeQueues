@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/app/lib/prisma";
+import { assertCleanName } from "@/app/lib/moderation"; // 👈 NEW
 
 const RegisterSchema = z.object({
   username: z.string().min(3).max(15),
@@ -58,10 +59,21 @@ export async function POST(req: Request) {
 
     const { password, dob, acceptPrivacy, isAdult } = parsed.data;
 
+    // 🔒 Username rules + obscenity check (3–15 chars)
+    try {
+      assertCleanName("Username", parsed.data.username, { min: 3, max: 15 });
+    } catch (err) {
+      if (err instanceof Error) {
+        return NextResponse.json({ error: err.message }, { status: 400 });
+      }
+      return NextResponse.json(
+        { error: "Invalid username." },
+        { status: 400 }
+      );
+    }
+
     const normalizedUsername = parsed.data.username.trim().toLowerCase();
     const normalizedEmail = parsed.data.email.trim().toLowerCase();
-
-    // 2) Business rules (mirror what you do client-side)
 
     if (!acceptPrivacy) {
       return NextResponse.json(
@@ -125,7 +137,6 @@ export async function POST(req: Request) {
       );
     }
 
-    // 3) Check username/email uniqueness
     const existing = await prisma.user.findFirst({
       where: {
         OR: [
@@ -142,10 +153,8 @@ export async function POST(req: Request) {
       );
     }
 
-    // 4) Hash password
     const passwordHash = await bcrypt.hash(password, 12);
 
-    // 5) Create user in DB
     await prisma.user.create({
       data: {
         username: normalizedUsername,
@@ -155,7 +164,6 @@ export async function POST(req: Request) {
       },
     });
 
-    // 6) All good
     return NextResponse.json({ ok: true });
   } catch (err) {
     console.error(err);

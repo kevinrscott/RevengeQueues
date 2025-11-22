@@ -8,6 +8,14 @@ datasource db {
   directUrl = env("POSTGRES_URL_NON_POOLING")
 }
 
+enum RegionCode {
+  NA
+  EU
+  SA
+  AS
+  OC
+}
+
 model User {
   id           Int      @id @default(autoincrement())
   username     String   @unique
@@ -17,7 +25,7 @@ model User {
   dob          DateTime
   createdAt    DateTime @default(now())
 
-  region       String?
+  region       RegionCode?
   profilePhoto String?
 
   // Relations
@@ -61,7 +69,7 @@ model UserGameProfile {
 model Team {
   id        Int      @id @default(autoincrement())
   name      String
-  region    String
+  region    RegionCode?
   logoUrl   String?
   bio       String?
   createdAt DateTime @default(now())

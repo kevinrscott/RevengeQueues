@@ -41,14 +41,12 @@ export const authOptions: NextAuthOptions = {
           return null;
         }
 
-        // This object becomes `user` in the jwt callback on first sign-in
         return {
           id: user.id.toString(),
-          name: user.username,         // NextAuth's built-in `name`
+          name: user.username,
           email: user.email,
-          username: user.username,     // custom
-          region: user.region ?? null, // custom
-          image: user.profilePhoto ?? null, // custom
+          username: user.username,
+          image: user.profilePhoto ?? null,
         };
       },
     }),
@@ -61,22 +59,18 @@ export const authOptions: NextAuthOptions = {
       const t = token as any;
       const u = user as any;
 
-      // Initial sign-in: copy data from `user` (returned by authorize)
       if (user) {
         t.id = u.id;
         t.name = u.name;
         t.email = u.email;
         t.username = u.username;
-        t.region = u.region ?? null;
-        t.picture = u.image ?? null; // NextAuth commonly uses `picture`
+        t.picture = u.image ?? null;
       }
 
-      // Optional: allow client-side `update()` to change session values
       if (trigger === "update" && session) {
         const s = session as any;
 
         if (s.username) t.username = s.username;
-        if (s.region) t.region = s.region;
         if (s.image) t.picture = s.image;
         if (s.name) t.name = s.name;
       }
@@ -94,7 +88,6 @@ export const authOptions: NextAuthOptions = {
 
         (session.user as any).id = t.id;
         (session.user as any).username = t.username;
-        (session.user as any).region = t.region;
       }
 
       return session;
