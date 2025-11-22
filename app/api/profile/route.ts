@@ -105,7 +105,7 @@ export async function PATCH(req: Request) {
       try {
         await del(oldPhotoUrl);
       } catch (err) {
-        console.error("Failed to delete old avatar from Blob:", err);
+        console.error("Failed to delete old avatar from Blob", err);
       }
     }
 
