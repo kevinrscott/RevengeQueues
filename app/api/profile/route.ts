@@ -3,7 +3,8 @@ import { getServerSession } from "next-auth";
 import authOptions from "@/auth.config";
 import { prisma } from "@/app/lib/prisma";
 import { del } from "@vercel/blob";
-import { assertCleanName, assertCleanText } from "@/app/lib/moderation"; // 👈 NEW
+import { assertCleanName, assertCleanText } from "@/app/lib/moderation";
+import { Prisma } from "@prisma/client";
 
 const VALID_REGIONS = ["NA", "EU", "SA", "AS", "OC"] as const;
 
@@ -61,10 +62,7 @@ export async function PATCH(req: Request) {
     const oldPhotoUrl = existingUser.profilePhoto ?? null;
     const newPhotoUrl = profilePhoto ?? oldPhotoUrl;
 
-    const userUpdateData: {
-      region?: string | null;
-      profilePhoto: string | null;
-    } = {
+    const userUpdateData: Prisma.UserUpdateInput = {
       profilePhoto: newPhotoUrl,
     };
 
@@ -73,7 +71,8 @@ export async function PATCH(req: Request) {
         region && VALID_REGIONS.includes(region as (typeof VALID_REGIONS)[number])
           ? region
           : null;
-      userUpdateData.region = normalizedRegion;
+
+      userUpdateData.region = normalizedRegion as Prisma.UserUpdateInput["region"];
     }
 
     await prisma.user.update({
