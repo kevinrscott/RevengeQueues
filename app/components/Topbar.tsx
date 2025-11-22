@@ -52,6 +52,7 @@ export default function Topbar() {
   const title = getPageTitle(pathname);
 
   const searchRef = useRef<HTMLDivElement>(null);
+  const username = (session?.user as any)?.username as string | undefined;
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
@@ -229,7 +230,7 @@ export default function Topbar() {
               {userMenuOpen && (
                 <div className="absolute right-0 mt-2 w-40 rounded-md bg-black border border-stone-700 shadow-lg text-sm z-50">
                   <Link
-                    href="/profile"
+                    href={username ? `/profile/${username}` : "/profile"}
                     className="block px-3 py-2 hover:bg-stone-800 text-stone-100"
                     onClick={() => setUserMenuOpen(false)}
                   >
