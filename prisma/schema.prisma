@@ -63,7 +63,7 @@ model UserGameProfile {
 
   @@index([userId])
   @@index([gameId])
-  @@unique([userId, gameId], name: "user_game_unique") // one profile per user+game
+  @@unique([userId, gameId], name: "user_game_unique")
 }
 
 model Team {
