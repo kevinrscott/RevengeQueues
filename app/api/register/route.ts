@@ -45,7 +45,6 @@ export async function POST(req: Request) {
   try {
     const body = await req.json();
 
-    // 1) Basic shape & types via Zod
     const parsed = RegisterSchema.safeParse(body);
     if (!parsed.success) {
       return NextResponse.json(
@@ -59,7 +58,6 @@ export async function POST(req: Request) {
 
     const { password, dob, acceptPrivacy, isAdult } = parsed.data;
 
-    // 🔒 Username rules + obscenity check (3–15 chars)
     try {
       assertCleanName("Username", parsed.data.username, { min: 3, max: 15 });
     } catch (err) {

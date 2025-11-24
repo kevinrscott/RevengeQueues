@@ -39,30 +39,51 @@ model User {
 model Game {
   id        Int    @id @default(autoincrement())
   name      String
-  shortCode String
+  shortCode String @unique
 
   // Relations
   profiles UserGameProfile[]
   teams    Team[]
+  ranks    GameRank[]
+}
+
+model GameRank {
+  id        Int      @id @default(autoincrement())
+  name      String
+  order     Int
+
+  iconUrl   String?
+
+  // FKs
+  gameId Int
+
+  // Relations
+  game     Game              @relation(fields: [gameId], references: [id])
+  profiles UserGameProfile[]
+
+  @@index([gameId])
+  @@unique([gameId, name])
 }
 
 model UserGameProfile {
   id         Int    @id @default(autoincrement())
   ingameName String
-  rank       String?
   wins       Int    @default(0)
   losses     Int    @default(0)
 
   // FKs
   userId Int
   gameId Int
+  rankId Int?   // FK to GameRank
 
   // Relations
-  user User @relation(fields: [userId], references: [id])
-  game Game @relation(fields: [gameId], references: [id])
+  user User      @relation(fields: [userId], references: [id])
+  game Game      @relation(fields: [gameId], references: [id])
+  rank GameRank? @relation(fields: [rankId], references: [id])
 
   @@index([userId])
   @@index([gameId])
+  @@index([rankId])
   @@unique([userId, gameId], name: "user_game_unique")
 }
 

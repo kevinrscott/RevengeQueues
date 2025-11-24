@@ -3,7 +3,7 @@ import { getServerSession } from "next-auth";
 import authOptions from "@/auth.config";
 import { prisma } from "@/app/lib/prisma";
 import { del } from "@vercel/blob";
-import { assertCleanName, assertCleanText } from "@/app/lib/moderation";
+import { assertCleanName } from "@/app/lib/moderation";
 import { Prisma } from "@prisma/client";
 
 const VALID_REGIONS = ["NA", "EU", "SA", "AS", "OC"] as const;
@@ -21,23 +21,17 @@ export async function PATCH(req: Request) {
   }
 
   const body = await req.json();
-  const { region, profilePhoto, ingameName, rank } = body as {
+  const { region, profilePhoto, ingameName, rankId, profileId } = body as {
     region?: string | null;
     profilePhoto?: string;
     ingameName?: string;
-    rank?: string;
+    rankId?: number | null;
+    profileId?: number | null;
   };
 
-  // 🔒 Language + shape checks BEFORE DB work
   try {
     if (ingameName) {
-      // 2–16 chars, safe chars, no obscenity
       assertCleanName("In-game Name", ingameName, { min: 2, max: 16 });
-    }
-
-    if (rank) {
-      // Free text but must not be obscene
-      assertCleanText("Rank", rank);
     }
   } catch (err) {
     if (err instanceof Error) {
@@ -45,7 +39,7 @@ export async function PATCH(req: Request) {
     }
     return NextResponse.json(
       { error: "Invalid profile data." },
-      { status: 400 }
+      { status: 400 },
     );
   }
 
@@ -68,11 +62,13 @@ export async function PATCH(req: Request) {
 
     if (typeof region !== "undefined") {
       const normalizedRegion =
-        region && VALID_REGIONS.includes(region as (typeof VALID_REGIONS)[number])
+        region &&
+        VALID_REGIONS.includes(region as (typeof VALID_REGIONS)[number])
           ? region
           : null;
 
-      userUpdateData.region = normalizedRegion as Prisma.UserUpdateInput["region"];
+      userUpdateData.region =
+        normalizedRegion as Prisma.UserUpdateInput["region"];
     }
 
     await prisma.user.update({
@@ -80,19 +76,56 @@ export async function PATCH(req: Request) {
       data: userUpdateData,
     });
 
-    const existingProfile = await prisma.userGameProfile.findFirst({
-      where: { userId },
-      orderBy: { id: "asc" },
-    });
+    let profile = null;
 
-    if (existingProfile) {
-      await prisma.userGameProfile.update({
-        where: { id: existingProfile.id },
-        data: {
-          ingameName,
-          rank,
-        },
+    if (profileId) {
+      profile = await prisma.userGameProfile.findUnique({
+        where: { id: profileId },
       });
+      if (!profile || profile.userId !== userId) {
+        return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+      }
+    } else {
+      profile = await prisma.userGameProfile.findFirst({
+        where: { userId },
+        orderBy: { id: "asc" },
+      });
+    }
+
+    if (profile) {
+      let safeRankId: number | null | undefined = rankId;
+      if (typeof rankId === "number") {
+        const rank = await prisma.gameRank.findUnique({
+          where: { id: rankId },
+        });
+        if (!rank || rank.gameId !== profile.gameId) {
+          return NextResponse.json(
+            { error: "Rank does not belong to this game" },
+            { status: 400 },
+          );
+        }
+        safeRankId = rankId;
+      } else if (rankId === null) {
+        safeRankId = null; // explicitly unranked
+      } else {
+        safeRankId = undefined;
+      }
+
+      const profileUpdateData: Prisma.UserGameProfileUpdateInput = {};
+
+      if (typeof ingameName !== "undefined") {
+        profileUpdateData.ingameName = ingameName;
+      }
+      if (typeof safeRankId !== "undefined") {
+        profileUpdateData.rankId = safeRankId;
+      }
+
+      if (Object.keys(profileUpdateData).length > 0) {
+        await prisma.userGameProfile.update({
+          where: { id: profile.id },
+          data: profileUpdateData,
+        });
+      }
     }
 
     if (
@@ -113,7 +146,7 @@ export async function PATCH(req: Request) {
     console.error(err);
     return NextResponse.json(
       { error: "Failed to update profile" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

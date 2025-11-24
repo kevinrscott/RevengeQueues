@@ -21,6 +21,10 @@ export default async function EditProfilePage() {
     include: {
       profiles: {
         take: 1,
+        include: {
+          game: true,
+          rank: true,
+        },
       },
     },
   });
@@ -30,6 +34,18 @@ export default async function EditProfilePage() {
   }
 
   const activeProfile = user.profiles[0] ?? null;
+
+  let ranks: { id: number; name: string }[] = [];
+  if (activeProfile) {
+    ranks = await prisma.gameRank.findMany({
+      where: { gameId: activeProfile.gameId },
+      orderBy: { order: "asc" },
+      select: {
+        id: true,
+        name: true,
+      },
+    });
+  }
 
   return (
     <main className="min-h-screen bg-gradient-to-r from-slate-900 to-cyan-900 p-6 text-white flex items-center justify-center">
@@ -42,7 +58,9 @@ export default async function EditProfilePage() {
           initialRegion={user.region ?? ""}
           initialProfilePhoto={user.profilePhoto ?? ""}
           initialIngameName={activeProfile?.ingameName ?? ""}
-          initialRank={activeProfile?.rank ?? ""}
+          initialRankId={activeProfile?.rankId ?? null}
+          profileId={activeProfile?.id ?? null}
+          ranks={ranks}
         />
       </div>
     </main>

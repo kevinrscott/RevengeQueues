@@ -3,12 +3,19 @@
 import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 
+type RankOption = {
+  id: number;
+  name: string;
+};
+
 type Props = {
   initialUsername: string;
   initialRegion: string;
   initialProfilePhoto: string;
   initialIngameName: string;
-  initialRank: string;
+  initialRankId: number | null;
+  profileId: number | null;
+  ranks: RankOption[];
 };
 
 export default function EditProfileForm({
@@ -16,7 +23,9 @@ export default function EditProfileForm({
   initialRegion,
   initialProfilePhoto,
   initialIngameName,
-  initialRank,
+  initialRankId,
+  profileId,
+  ranks,
 }: Props) {
   const router = useRouter();
 
@@ -24,12 +33,13 @@ export default function EditProfileForm({
   const [region, setRegion] = useState(initialRegion);
   const [profilePhoto, setProfilePhoto] = useState(initialProfilePhoto);
   const [ingameName, setIngameName] = useState(initialIngameName);
-  const [rank, setRank] = useState(initialRank);
+  const [rankId, setRankId] = useState<string>(
+    initialRankId ? String(initialRankId) : ""
+  );
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
-
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   function handleAvatarClick() {
@@ -85,7 +95,8 @@ export default function EditProfileForm({
           region: region || null,
           profilePhoto: profilePhotoUrl,
           ingameName,
-          rank,
+          rankId: rankId ? Number(rankId) : null,
+          profileId,
         }),
       });
 
@@ -187,12 +198,19 @@ export default function EditProfileForm({
 
       <div className="space-y-1">
         <label className="text-sm font-medium text-slate-200">Rank</label>
-        <input
-          type="text"
-          value={rank}
-          onChange={(e) => setRank(e.target.value)}
+        <select
+          value={rankId}
+          onChange={(e) => setRankId(e.target.value)}
           className="w-full rounded border border-slate-700 bg-stone-800 px-3 py-2 text-sm text-slate-100 focus:ring-2 focus:ring-cyan-500 focus:outline-none"
-        />
+          disabled={!profileId}
+        >
+          <option value="">Unranked</option>
+          {ranks.map((r) => (
+            <option key={r.id} value={String(r.id)}>
+              {r.name}
+            </option>
+          ))}
+        </select>
       </div>
 
       <div className="flex gap-3 pt-2">

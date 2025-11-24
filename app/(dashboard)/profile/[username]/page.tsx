@@ -28,6 +28,7 @@ export default async function ProfilePage({ params }: PageProps) {
       profiles: {
         include: {
           game: true,
+          rank: true
         },
       },
     },
@@ -101,7 +102,7 @@ export default async function ProfilePage({ params }: PageProps) {
               <div>
                 <p className="text-slate-400">Rank</p>
                 <p className="font-semibold text-lg">
-                  {activeProfile.rank || "Unranked"}
+                  {activeProfile.rank?.name || "Unranked"}
                 </p>
               </div>
 
