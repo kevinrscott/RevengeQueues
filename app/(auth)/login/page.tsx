@@ -2,7 +2,7 @@ import LoginForm from "./LoginForm";
 
 export default function LoginPage() {
   return (
-    <main className="flex min-h-screen items-center justify-center bg-gradient-to-r from-slate-900 to-cyan-900 p-6 text-white">
+    <main className="flex min-h-screen items-center justify-center bg-gradient-to-r from-slate-900 to-slate-800 p-6 text-white">
       <div className="bg-white p-10 rounded-xl shadow-2xl w-full max-w-xl space-y-8 text-black">
         <h1 className="text-4xl font-bold text-center text-gray-900">
           Sign In

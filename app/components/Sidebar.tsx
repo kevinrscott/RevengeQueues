@@ -3,12 +3,13 @@
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { Users, Gamepad2, Brackets, Swords } from "lucide-react";
 
 const navItems = [
-  { href: "/games", label: "Games"},
-  { href: "/tournaments", label: "Tournaments" },
-  { href: "/scrims", label: "Scrims" },
-  { href: "/lfg", label: "LFG" },
+  { href: "/games", label: "Games", icon: Gamepad2 },
+  { href: "/tournaments", label: "Tournaments", icon: Brackets },
+  { href: "/scrims", label: "Scrims", icon: Swords },
+  { href: "/lfg", label: "LFG", icon: Users },
 ];
 
 type SidebarProps = {
@@ -21,7 +22,7 @@ export default function Sidebar({ collapsed }: SidebarProps) {
   return (
     <aside
       className={`
-        bg-stone-900 border-r border-black text-white min-h-screen flex flex-col
+        bg-slate-950 border-r border-black text-white min-h-screen flex flex-col
         transition-[width,padding] duration-200
         ${collapsed ? "w-20 pt-6" : "w-64 pt-6"}
       `}
@@ -38,9 +39,10 @@ export default function Sidebar({ collapsed }: SidebarProps) {
         </Link>
       </div>
 
-      <nav className="flex flex-col px-3 space-y-2">
+      <nav className="flex flex-col px-3 space-y-2 ml-3">
         {navItems.map((item) => {
           const isActive = pathname.startsWith(item.href);
+          const Icon = item.icon;
 
           return (
             <Link
@@ -57,8 +59,8 @@ export default function Sidebar({ collapsed }: SidebarProps) {
                 }
               `}
             >
-              <span className="w-6 text-center text-base">
-                {item.label.charAt(0).toUpperCase()}
+              <span className="w-6 flex justify-center">
+                <Icon className="w-5 h-5" />
               </span>
 
               <span

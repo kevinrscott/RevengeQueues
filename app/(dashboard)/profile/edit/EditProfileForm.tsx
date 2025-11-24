@@ -163,7 +163,7 @@ export default function EditProfileForm({
           type="text"
           value={username}
           disabled
-          className="w-full rounded border border-slate-700 bg-stone-800 px-3 py-2 text-sm text-slate-400 cursor-not-allowed"
+          className="w-full rounded border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-slate-400 cursor-not-allowed"
         />
         <p className="text-xs text-slate-500">Usernames cannot be changed.</p>
       </div>
@@ -173,7 +173,7 @@ export default function EditProfileForm({
         <select
           value={region}
           onChange={(e) => setRegion(e.target.value)}
-          className="w-full rounded border border-slate-700 bg-stone-800 px-3 py-2 text-sm text-slate-100 focus:ring-2 focus:ring-cyan-500 focus:outline-none"
+          className="w-full rounded border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-slate-100 focus:ring-2 focus:ring-cyan-500 focus:outline-none"
         >
           <option value="">Select Region</option>
           <option value="NA">NA</option>
@@ -192,7 +192,7 @@ export default function EditProfileForm({
           type="text"
           value={ingameName}
           onChange={(e) => setIngameName(e.target.value)}
-          className="w-full rounded border border-slate-700 bg-stone-800 px-3 py-2 text-sm text-slate-100 focus:ring-2 focus:ring-cyan-500 focus:outline-none"
+          className="w-full rounded border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-slate-100 focus:ring-2 focus:ring-cyan-500 focus:outline-none"
         />
       </div>
 
@@ -201,7 +201,7 @@ export default function EditProfileForm({
         <select
           value={rankId}
           onChange={(e) => setRankId(e.target.value)}
-          className="w-full rounded border border-slate-700 bg-stone-800 px-3 py-2 text-sm text-slate-100 focus:ring-2 focus:ring-cyan-500 focus:outline-none"
+          className="w-full rounded border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-slate-100 focus:ring-2 focus:ring-cyan-500 focus:outline-none"
           disabled={!profileId}
         >
           <option value="">Unranked</option>

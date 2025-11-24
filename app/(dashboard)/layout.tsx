@@ -25,8 +25,8 @@ export default function DashboardLayout({
         onClick={() => setCollapsed((prev) => !prev)}
         type="button"
         className="absolute top-5.5 z-50 w-7 h-7 flex items-center justify-center
-                   rounded-full border border-black bg-stone-900 text-stone-200
-                   hover:bg-stone-700 transition-colors text-xs"
+                   rounded-full border border-slate-700 bg-slate-800 text-stone-200
+                   hover:bg-slate-900 transition-colors text-xs"
         style={{
           left: collapsed ? "5rem" : "16rem",
           transform: "translateX(-50%)",

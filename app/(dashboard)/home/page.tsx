@@ -10,7 +10,7 @@ export default async function HomePage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gradient-to-r from-slate-900 to-cyan-900 p-6 text-white">
+    <div className="flex min-h-screen items-center justify-center bg-gradient-to-r from-slate-900 to-slate-800 p-6 text-white">
       <h1 className="text-xl font-semibold">Home</h1>
     </div>
   );

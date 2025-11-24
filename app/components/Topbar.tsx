@@ -119,7 +119,7 @@ export default function Topbar() {
   }
 
   return (
-    <header className="w-full border-b border-black bg-stone-900 px-4 py-5 flex items-center justify-between">
+    <header className="w-full border-b border-black bg-slate-950 px-4 py-5 flex items-center justify-between">
       <span className="text-lg font-semibold pl-2 flex-shrink-0">
         {title}
       </span>
@@ -134,7 +134,7 @@ export default function Topbar() {
               if (hasResults) setSearchOpen(true);
             }}
             placeholder="Search players or teams..."
-            className="w-full min-w-[350px] max-w-[600px] rounded-md bg-stone-800 border border-stone-700 px-4 py-2 text-sm text-stone-100 placeholder:text-stone-500 focus:outline-none focus:ring-2 focus:ring-cyan-500"
+            className="w-full min-w-[350px] max-w-[600px] rounded-md bg-slate-800 border border-slate-600 px-4 py-2 text-sm text-slate-300 placeholder:text-stone-500 focus:outline-none focus:ring-2 focus:ring-cyan-500"
           />
 
           {searchOpen && (hasResults || searchLoading) && (
@@ -216,7 +216,7 @@ export default function Topbar() {
               <button
                 type="button"
                 onClick={() => setUserMenuOpen((prev) => !prev)}
-                className="flex items-center gap-2 px-3 py-1.5 rounded-md bg-stone-900 font-bold text-sm text-stone-100 hover:bg-stone-800 transition"
+                className="flex items-center gap-2 px-3 py-1.5 rounded-md bg-slate-800 font-bold text-sm text-stone-100 hover:bg-slate-700 transition"
               >
                 <span>{session.user.name}</span>
                 <ChevronDown
@@ -228,7 +228,7 @@ export default function Topbar() {
               </button>
 
               {userMenuOpen && (
-                <div className="absolute right-0 mt-2 w-40 rounded-md bg-black border border-stone-700 shadow-lg text-sm z-50">
+                <div className="absolute right-0 mt-2 w-40 rounded-md bg-slate-950 border border-slate-700 shadow-lg text-sm z-50">
                   <Link
                     href={username ? `/profile/${username}` : "/profile"}
                     className="block px-3 py-2 hover:bg-stone-800 text-stone-100"

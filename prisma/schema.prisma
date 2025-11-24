@@ -60,6 +60,7 @@ model GameRank {
   // Relations
   game     Game              @relation(fields: [gameId], references: [id])
   profiles UserGameProfile[]
+  teams    Team[]
 
   @@index([gameId])
   @@unique([gameId, name])
@@ -70,6 +71,8 @@ model UserGameProfile {
   ingameName String
   wins       Int    @default(0)
   losses     Int    @default(0)
+
+  lookingForTeam Boolean @default(false)
 
   // FKs
   userId Int
@@ -95,17 +98,22 @@ model Team {
   bio       String?
   createdAt DateTime @default(now())
 
+  isRecruiting Boolean @default(false)
+
   // FKs
   gameId Int
+  rankId Int?
 
   // Relations
   game          Game            @relation(fields: [gameId], references: [id])
+  rank          GameRank?       @relation(fields: [rankId], references: [id])
   memberships   TeamMembership[]
   requests      TeamRequest[]
   hostedScrims  Scrim[]
   scrimRequests ScrimRequest[]
 
   @@index([gameId])
+  @@index([rankId])
 }
 
 model TeamMembership {

@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 
@@ -32,7 +33,6 @@ export default function GameSelector({ games }: { games: Game[] }) {
         throw new Error(data.error || "Something went wrong");
       }
 
-
       router.push("/home");
     } catch (err: any) {
       setError(err.message || "Failed to select game");
@@ -40,34 +40,39 @@ export default function GameSelector({ games }: { games: Game[] }) {
     }
   }
 
+  function getGameImage(shortCode: string): string {
+    const code = shortCode.toUpperCase();
+    if (code === "COD") return "/img/cod.jpg";
+    return "/img/placeholder.jpg";
+  }
+
   return (
     <div className="space-y-4">
       {error && (
-        <p className="text-sm text-red-600 text-center">
-          {error}
-        </p>
+        <p className="text-sm text-red-600 text-center">{error}</p>
       )}
 
-      <div className="grid gap-3">
+      <div className="grid gap-4 grid-cols-1">
         {games.map((game) => (
           <button
             key={game.id}
-            type="button"
             onClick={() => handleSelect(game.id)}
             disabled={loadingId === game.id}
-            className="w-full flex items-center justify-between rounded-lg border border-gray-200 px-4 py-3 hover:border-cyan-500 hover:shadow-md transition disabled:opacity-60 disabled:cursor-not-allowed"
+            className="group relative w-full max-w-3xs mx-auto overflow-hidden rounded-xl outline-none disabled:opacity-60 disabled:cursor-not-allowed"
           >
-            <div className="text-left">
-              <div className="font-semibold text-gray-900">
-                {game.name}
-              </div>
-              <div className="text-xs text-gray-500">
-                {game.shortCode}
-              </div>
+            <div className="relative w-full overflow-hidden rounded-2xl border-3 border-stone-800">
+              <Image
+                src={getGameImage(game.shortCode)}
+                alt={game.name}
+                width={1600}
+                height={900}
+                className="w-full h-auto transition duration-200 group-hover:brightness-110 group-hover:scale-105"
+              />
+
+              <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent" />
             </div>
-            <span className="text-sm font-medium text-cyan-600">
-              {loadingId === game.id ? "Selecting..." : "Select"}
-            </span>
+
+            <div className="pointer-events-none absolute inset-0 rounded-xl ring-0 ring-cyan-400/70 opacity-0 group-hover:opacity-100 group-hover:ring-2 transition-all" />
           </button>
         ))}
       </div>

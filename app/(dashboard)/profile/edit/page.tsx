@@ -48,8 +48,8 @@ export default async function EditProfilePage() {
   }
 
   return (
-    <main className="min-h-screen bg-gradient-to-r from-slate-900 to-cyan-900 p-6 text-white flex items-center justify-center">
-      <div className="w-full max-w-xl rounded-xl bg-stone-900 p-8 shadow-2xl space-y-6">
+    <main className="min-h-screen bg-gradient-to-r from-slate-900 to-slate-800 p-6 text-white flex items-center justify-center">
+      <div className="w-full max-w-xl rounded-xl bg-slate-900 border-1 border-slate-800 p-8 shadow-2xl space-y-6">
         <h1 className="text-3xl font-bold text-slate-100 text-center">
           Edit Profile
         </h1>
