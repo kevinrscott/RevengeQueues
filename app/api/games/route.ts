@@ -46,7 +46,6 @@ export async function POST(req: Request) {
       userId,
       gameId: Number(gameId),
       ingameName: "",
-      rank: null,
       wins: 0,
       losses: 0,
     },
