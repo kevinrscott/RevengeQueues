@@ -106,7 +106,7 @@ export async function PATCH(req: Request) {
         }
         safeRankId = rankId;
       } else if (rankId === null) {
-        safeRankId = null; // explicitly unranked
+        safeRankId = null;
       } else {
         safeRankId = undefined;
       }
@@ -116,8 +116,13 @@ export async function PATCH(req: Request) {
       if (typeof ingameName !== "undefined") {
         profileUpdateData.ingameName = ingameName;
       }
+
       if (typeof safeRankId !== "undefined") {
-        profileUpdateData.rankId = safeRankId;
+        if (safeRankId === null) {
+          profileUpdateData.rank = { disconnect: true };
+        } else {
+          profileUpdateData.rank = { connect: { id: safeRankId } };
+        }
       }
 
       if (Object.keys(profileUpdateData).length > 0) {

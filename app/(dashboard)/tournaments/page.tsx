@@ -23,7 +23,6 @@ export default async function TournamentPage() {
             height="500"
             frameBorder="0"
             scrolling="auto"
-            allowTransparency={true}
           />
         </div>
       </div>
