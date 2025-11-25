@@ -14,6 +14,8 @@ function getPageTitle(pathname: string): string {
     "/scrims": "Scrims",
     "/settings": "Settings",
     "/home": "Home",
+    "/lfg": "LFG",
+    "/tournaments": "Tournaments",
   };
 
   if (map[pathname]) return map[pathname];
@@ -36,11 +38,13 @@ type TeamResult = {
   name: string;
   region: string;
   logoUrl: string | null;
+  slug: string;
 };
 
 export default function Topbar() {
   const { data: session } = useSession();
   const pathname = usePathname();
+
   const [userMenuOpen, setUserMenuOpen] = useState(false);
 
   const [searchTerm, setSearchTerm] = useState("");
@@ -50,17 +54,33 @@ export default function Topbar() {
   const [teams, setTeams] = useState<TeamResult[]>([]);
 
   const title = getPageTitle(pathname);
+  const username = (session?.user as any)?.username as string | undefined;
 
   const searchRef = useRef<HTMLDivElement>(null);
-  const username = (session?.user as any)?.username as string | undefined;
+  const userMenuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
-      if (searchRef.current && !searchRef.current.contains(e.target as Node)) {
+      if (
+        searchRef.current &&
+        !searchRef.current.contains(e.target as Node)
+      ) {
         setSearchOpen(false);
       }
     }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (
+        userMenuRef.current &&
+        !userMenuRef.current.contains(e.target as Node)
+      ) {
+        setUserMenuOpen(false);
+      }
+    }
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
@@ -138,7 +158,7 @@ export default function Topbar() {
           />
 
           {searchOpen && (hasResults || searchLoading) && (
-            <div className="absolute mt-1 w-full rounded-md bg-black border border-stone-700 shadow-lg text-sm z-50 max-h-80 overflow-y-auto">
+            <div className="absolute mt-1 w-full rounded-md bg-slate-950 border border-slate-700 shadow-lg text-sm z-50 max-h-80 overflow-y-auto">
               {searchLoading && (
                 <div className="px-3 py-2 text-xs text-slate-400">
                   Searching...
@@ -162,7 +182,7 @@ export default function Topbar() {
                       key={`player-${player.id}`}
                       href={`/profile/${player.username}`}
                       onClick={handleResultClick}
-                      className="flex items-center gap-2 px-3 py-2 hover:bg-stone-800 text-stone-100"
+                      className="flex items-center gap-2 px-3 py-2 hover:bg-slate-800 text-stone-100"
                     >
                       <div className="h-7 w-7 rounded-full bg-stone-800 flex items-center justify-center text-xs font-semibold">
                         {player.username[0]?.toUpperCase() ?? "?"}
@@ -189,7 +209,7 @@ export default function Topbar() {
                   {teams.map((team) => (
                     <Link
                       key={`team-${team.id}`}
-                      href={`/teams/${team.id}`}
+                      href={`/teams/${team.slug}`}
                       onClick={handleResultClick}
                       className="flex items-center justify-between px-3 py-2 hover:bg-stone-800 text-stone-100"
                     >
@@ -210,12 +230,13 @@ export default function Topbar() {
           )}
         </div>
 
-        <div className="relative flex-shrink-0">
+        <div ref={userMenuRef} className="relative flex-shrink-0">
           {session?.user?.name ? (
             <>
               <button
                 type="button"
                 onClick={() => setUserMenuOpen((prev) => !prev)}
+                aria-expanded={userMenuOpen}
                 className="flex items-center gap-2 px-3 py-1.5 rounded-md bg-slate-800 font-bold text-sm text-stone-100 hover:bg-slate-700 transition"
               >
                 <span>{session.user.name}</span>
@@ -227,23 +248,35 @@ export default function Topbar() {
                 />
               </button>
 
-              {userMenuOpen && (
-                <div className="absolute right-0 mt-2 w-40 rounded-md bg-slate-950 border border-slate-700 shadow-lg text-sm z-50">
-                  <Link
-                    href={username ? `/profile/${username}` : "/profile"}
-                    className="block px-3 py-2 hover:bg-stone-800 text-stone-100"
-                    onClick={() => setUserMenuOpen(false)}
-                  >
-                    Profile
-                  </Link>
+              <div
+                className={`absolute right-0 mt-2 w-40 rounded-md bg-slate-950 border border-slate-700 shadow-lg text-sm z-50 transform origin-top transition-all duration-150 ${
+                  userMenuOpen
+                    ? "opacity-100 scale-100 translate-y-0 pointer-events-auto"
+                    : "opacity-0 scale-95 -translate-y-1 pointer-events-none"
+                }`}
+              >
+                <Link
+                  href={username ? `/profile/${username}` : "/profile"}
+                  className="block px-3 py-2 hover:bg-stone-800 text-stone-100"
+                  onClick={() => setUserMenuOpen(false)}
+                >
+                  Profile
+                </Link>
 
-                  <div className="border-t border-stone-700" />
+                <Link
+                  href="/teams"
+                  className="block px-3 py-2 hover:bg-stone-800 text-stone-100"
+                  onClick={() => setUserMenuOpen(false)}
+                >
+                  Teams
+                </Link>
 
-                  <div className="px-3 py-2">
-                    <LogoutButton />
-                  </div>
+                <div className="border-t border-stone-700" />
+
+                <div className="px-3 py-2">
+                  <LogoutButton />
                 </div>
-              )}
+              </div>
             </>
           ) : (
             <Link

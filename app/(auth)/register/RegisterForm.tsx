@@ -79,7 +79,6 @@ export default function RegisterForm() {
     e.preventDefault();
     setError(null);
 
-    // 🔹 NEW: trim + length validate username 3–15
     const trimmedUsername = form.username.trim();
     if (trimmedUsername.length < 3) {
       setError("Username must be at least 3 characters long.");

@@ -35,7 +35,7 @@ export default async function LfgPage() {
   const activeProfile = user.profiles[0];
   const currentGame = activeProfile.game;
 
-  const [ranks, lftProfiles, lfpTeams] = await Promise.all([
+  const [ranks, lftProfiles, lfpTeams, manageableTeams] = await Promise.all([
     prisma.gameRank.findMany({
       where: { gameId: currentGame.id },
       orderBy: { order: "asc" },
@@ -60,14 +60,33 @@ export default async function LfgPage() {
         },
       },
     }),
+    prisma.team.findMany({
+      where: {
+        gameId: currentGame.id,
+        memberships: {
+          some: {
+            userId,
+            role: {
+              in: ["owner", "manager"],
+              mode: "insensitive",
+            },
+          },
+        },
+      },
+      include: {
+        game: true,
+        rank: true,
+        memberships: {
+          include: { user: true },
+        },
+      },
+    }),
   ]);
 
   return (
     <main className="min-h-screen bg-gradient-to-r from-slate-900 to-slate-800 text-white p-6">
       <div className="mx-auto space-y-6">
-        <h1 className="text-3xl font-bold">
-          Find Teams &amp; Players
-        </h1>
+        <h1 className="text-3xl font-bold">Find Teams &amp; Players</h1>
         <LfgClient
           currentGame={{
             id: currentGame.id,
@@ -77,6 +96,7 @@ export default async function LfgPage() {
           ranks={ranks}
           initialLftProfiles={lftProfiles}
           initialLfpTeams={lfpTeams}
+          manageableTeams={manageableTeams}
           viewerId={userId}
           viewerProfile={{
             id: activeProfile.id,

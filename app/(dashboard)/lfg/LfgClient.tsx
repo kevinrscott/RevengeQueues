@@ -30,6 +30,7 @@ export default function LfgClient({
   ranks,
   initialLftProfiles,
   initialLfpTeams,
+  manageableTeams,
   viewerId,
   viewerProfile,
 }: {
@@ -37,23 +38,23 @@ export default function LfgClient({
   ranks: Rank[];
   initialLftProfiles: UserGameProfile[];
   initialLfpTeams: Team[];
+  manageableTeams: Team[];
   viewerId: number | null;
   viewerProfile: UserGameProfile;
 }) {
-  // Store lists in state so we can live-update them
   const [lftProfiles, setLftProfiles] = useState<UserGameProfile[]>(initialLftProfiles);
   const [lfpTeams, setLfpTeams] = useState<Team[]>(initialLfpTeams);
+  const [myTeams, setMyTeams] = useState<Team[]>(manageableTeams);
 
-  // Track whether *this* user is looking for team
   const [viewerLooking, setViewerLooking] = useState<boolean>(
     viewerProfile.lookingForTeam
   );
 
-  // Filter state (just rank filters now, game is fixed)
   const [playerRankFilter, setPlayerRankFilter] = useState<string>("");
   const [teamRankFilter, setTeamRankFilter] = useState<string>("");
 
-  // Derived, filtered lists
+  const [showTeamModal, setShowTeamModal] = useState(false);
+
   const filteredLftProfiles = lftProfiles.filter((p) => {
     if (!playerRankFilter) return true;
     return p.rank?.id === Number(playerRankFilter);
@@ -64,8 +65,18 @@ export default function LfgClient({
     return t.rank?.id === Number(teamRankFilter);
   });
 
+  const manageableMyTeams =
+    viewerId == null
+      ? []
+      : myTeams.filter((t) =>
+          t.memberships.some(
+            (m) =>
+              m.user.id === viewerId &&
+              ["owner", "manager"].includes(m.role.toLowerCase())
+          )
+        );
+
   async function toggleLookingForTeam(looking: boolean) {
-    // optimistic UI
     setViewerLooking(looking);
     setLftProfiles((prev) => {
       const exists = prev.some((p) => p.id === viewerProfile.id);
@@ -76,10 +87,8 @@ export default function LfgClient({
             p.id === viewerProfile.id ? { ...p, lookingForTeam: true } : p
           );
         }
-        // add viewer to list
         return [...prev, { ...viewerProfile, lookingForTeam: true }];
       } else {
-        // remove viewer from list
         return prev.filter((p) => p.id !== viewerProfile.id);
       }
     });
@@ -99,16 +108,28 @@ export default function LfgClient({
   }
 
   async function toggleLookingForPlayers(teamId: number, recruiting: boolean) {
-    setLfpTeams((prev) => {
-      const team = prev.find((t) => t.id === teamId);
-      if (!team) return prev;
+    // Keep myTeams in sync
+    setMyTeams((prev) =>
+      prev.map((t) =>
+        t.id === teamId ? { ...t, isRecruiting: recruiting } : t
+      )
+    );
 
-      if (!recruiting) {
-        return prev.filter((t) => t.id !== teamId);
+    setLfpTeams((prev) => {
+      const existing = prev.find((t) => t.id === teamId);
+
+      if (recruiting) {
+        if (existing) {
+          return prev.map((t) =>
+            t.id === teamId ? { ...t, isRecruiting: true } : t
+          );
+        }
+        const fromMyTeams = myTeams.find((t) => t.id === teamId);
+        if (!fromMyTeams) return prev;
+        return [...prev, { ...fromMyTeams, isRecruiting: true }];
       } else {
-        return prev.map((t) =>
-          t.id === teamId ? { ...t, isRecruiting: recruiting } : t
-        );
+        if (!existing) return prev;
+        return prev.filter((t) => t.id !== teamId);
       }
     });
 
@@ -197,8 +218,7 @@ export default function LfgClient({
                     </span>
                   </div>
                   <div className="text-xs text-slate-400">
-                    {p.rank ? p.rank.name : "Unranked"} · W/L {p.wins}/
-                    {p.losses}
+                    {p.rank ? p.rank.name : "Unranked"} · W/L {p.wins}/{p.losses}
                   </div>
                 </div>
               </div>
@@ -208,10 +228,21 @@ export default function LfgClient({
 
         <section className="flex-1 bg-slate-900/80 border border-slate-800 rounded-xl p-4 space-y-4">
           <div className="flex items-center justify-between gap-4">
-            <h2 className="text-xl font-semibold">Looking for Player</h2>
-            <p className="text-xs text-slate-400">
-              Team owner/manager can toggle recruiting on their teams.
-            </p>
+            <div>
+              <h2 className="text-xl font-semibold">Looking for Player</h2>
+              <p className="text-xs text-slate-400">
+                Teams marked as recruiting will appear here.
+              </p>
+            </div>
+
+            {manageableMyTeams.length > 0 && (
+              <button
+                onClick={() => setShowTeamModal(true)}
+                className="text-xs px-3 py-1 rounded-full bg-slate-700 hover:bg-slate-600"
+              >
+                Manage Recruiting
+              </button>
+            )}
           </div>
 
           <div className="space-y-3 max-h-[70vh] overflow-y-auto pr-2">
@@ -237,7 +268,6 @@ export default function LfgClient({
                   <div>
                     <div className="font-medium">{t.name}</div>
                     <div className="text-xs text-slate-400">
-                      {t.game.shortCode} ·{" "}
                       {t.rank ? t.rank.name : "Any rank"} ·{" "}
                       {t.memberships.length} players
                     </div>
@@ -259,6 +289,64 @@ export default function LfgClient({
           </div>
         </section>
       </div>
+
+      {showTeamModal && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60"
+          onClick={() => setShowTeamModal(false)}
+        >
+          <div
+            className="w-full max-w-lg rounded-xl bg-slate-900 border border-slate-700 p-5 space-y-4 shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-semibold">Manage Team Recruiting</h3>
+              <button
+                onClick={() => setShowTeamModal(false)}
+                className="text-xs px-2 py-1 rounded-md bg-slate-800 hover:bg-slate-700"
+              >
+                Close
+              </button>
+            </div>
+
+            {manageableMyTeams.length === 0 ? (
+              <p className="text-sm text-slate-400">
+                You don&apos;t own or manage any teams for {currentGame.name}.
+              </p>
+            ) : (
+              <div className="space-y-2 max-h-72 overflow-y-auto pr-1">
+                {manageableMyTeams.map((t) => (
+                  <div
+                    key={t.id}
+                    className="flex items-center justify-between bg-slate-950/60 border border-slate-800 rounded-lg px-3 py-2"
+                  >
+                    <div>
+                      <div className="font-medium">{t.name}</div>
+                      <div className="text-xs text-slate-400">
+                        {t.game.shortCode} ·{" "}
+                        {t.rank ? t.rank.name : "Any rank"} ·{" "}
+                        {t.memberships.length} players
+                      </div>
+                      <div className="text-[10px] text-slate-500 mt-1">
+                        Status: {t.isRecruiting ? "Recruiting" : "Not recruiting"}
+                      </div>
+                    </div>
+
+                    <button
+                      onClick={() =>
+                        toggleLookingForPlayers(t.id, !t.isRecruiting)
+                      }
+                      className="text-xs px-3 py-1 rounded-full bg-amber-600 hover:bg-amber-500 whitespace-nowrap"
+                    >
+                      {t.isRecruiting ? "Stop Recruiting" : "Look for Players"}
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

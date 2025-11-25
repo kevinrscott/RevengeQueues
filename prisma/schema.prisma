@@ -93,7 +93,8 @@ model UserGameProfile {
 model Team {
   id        Int      @id @default(autoincrement())
   name      String
-  region    RegionCode?
+  slug      String   @unique
+  region    RegionCode
   logoUrl   String?
   bio       String?
   createdAt DateTime @default(now())

@@ -37,12 +37,15 @@ export async function POST(req: Request) {
     );
   }
 
+  const data: any = { isRecruiting };
+
+  if (typeof rankId !== "undefined") {
+    data.rankId = rankId;
+  }
+
   const updated = await prisma.team.update({
     where: { id: teamId },
-    data: {
-      isRecruiting,
-      rankId: rankId ?? null,
-    },
+    data,
   });
 
   return NextResponse.json(updated);

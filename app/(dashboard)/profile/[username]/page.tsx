@@ -3,6 +3,7 @@ import authOptions from "@/auth.config";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { prisma } from "@/app/lib/prisma";
+import Image from "next/image";
 
 type PageProps = {
   params: Promise<{ username: string }>;
@@ -48,9 +49,11 @@ export default async function ProfilePage({ params }: PageProps) {
           <div className="flex items-center gap-4">
             <div className="h-24 w-24 rounded-full bg-slate-800 overflow-hidden">
               {user.profilePhoto ? (
-                <img
+                <Image
                   src={user.profilePhoto}
                   alt={`${user.username} avatar`}
+                  width={96}
+                  height={96}
                   className="h-full w-full object-cover"
                 />
               ) : (

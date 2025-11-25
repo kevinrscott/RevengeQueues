@@ -21,11 +21,11 @@ export default function LogoutButton() {
           onClick={() => setOpen(false)}
         >
           <div
-            className="bg-white p-6 rounded shadow-xl w-[300px] text-center space-y-4"
+            className="bg-slate-600 border-1 border-slate-400 p-6 rounded shadow-xl w-[300px] text-center space-y-4"
             onClick={(e) => e.stopPropagation()}
           >
-            <h2 className="text-lg font-semibold text-black">Are you sure?</h2>
-            <p className="text-sm text-black">
+            <h2 className="text-lg font-semibold text-white">Are you sure?</h2>
+            <p className="text-sm text-white">
               You will be logged out of your account.
             </p>
 

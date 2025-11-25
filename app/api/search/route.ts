@@ -41,6 +41,7 @@ export async function GET(req: NextRequest) {
         name: true,
         region: true,
         logoUrl: true,
+        slug: true,
       },
       take: 5,
       orderBy: { name: "asc" },
