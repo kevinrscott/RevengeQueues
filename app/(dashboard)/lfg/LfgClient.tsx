@@ -163,9 +163,7 @@ export default function LfgClient({
         </div>
       </section>
 
-      {/* 🔥 changed this wrapper only */}
       <div className="flex flex-col lg:flex-row gap-6 items-start">
-        {/* Looking for Team (players) */}
         <section className="flex-1 bg-slate-900/80 border border-slate-800 rounded-xl p-4 space-y-4">
           <div className="flex items-center justify-between gap-4">
             <h2 className="text-xl font-semibold">Looking for Team</h2>
@@ -199,7 +197,6 @@ export default function LfgClient({
                     </span>
                   </div>
                   <div className="text-xs text-slate-400">
-                    {p.game.shortCode} ·{" "}
                     {p.rank ? p.rank.name : "Unranked"} · W/L {p.wins}/
                     {p.losses}
                   </div>
@@ -209,7 +206,6 @@ export default function LfgClient({
           </div>
         </section>
 
-        {/* Looking for Player (teams) */}
         <section className="flex-1 bg-slate-900/80 border border-slate-800 rounded-xl p-4 space-y-4">
           <div className="flex items-center justify-between gap-4">
             <h2 className="text-xl font-semibold">Looking for Player</h2>

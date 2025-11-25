@@ -58,15 +58,20 @@ export default function GameSelector({ games }: { games: Game[] }) {
             key={game.id}
             onClick={() => handleSelect(game.id)}
             disabled={loadingId === game.id}
-            className="group relative w-full max-w-3xs mx-auto overflow-hidden rounded-xl outline-none disabled:opacity-60 disabled:cursor-not-allowed"
+            className={`
+              group relative w-full max-w-3xs mx-auto overflow-hidden rounded-xl 
+              outline-none disabled:opacity-60 disabled:cursor-not-allowed
+              transition-transform duration-300 ease-out
+              hover:scale-105
+            `}
           >
-            <div className="relative w-full overflow-hidden rounded-2xl border-3 border-stone-800">
+            <div className="relative w-full overflow-hidden rounded-2xl border-3 border-slate-400">
               <Image
                 src={getGameImage(game.shortCode)}
                 alt={game.name}
                 width={1600}
                 height={900}
-                className="w-full h-auto transition duration-200 group-hover:brightness-110 group-hover:scale-105"
+                className="w-full h-auto transition duration-300 group-hover:brightness-110"
               />
 
               <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent" />
