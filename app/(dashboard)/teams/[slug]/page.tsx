@@ -3,12 +3,12 @@ import { getServerSession } from "next-auth";
 import authOptions from "@/auth.config";
 import { notFound, redirect } from "next/navigation";
 import Image from "next/image";
+import Link from "next/link";
 import DisbandTeamButton from "./DisbandTeamButton";
 
 type PageProps = {
   params: Promise<{ slug: string }>;
 };
-
 
 export default async function TeamPage({ params }: PageProps) {
   const session = await getServerSession(authOptions);
@@ -42,9 +42,7 @@ export default async function TeamPage({ params }: PageProps) {
   );
 
   const ownerMembership =
-    team.memberships.find(
-      (m) => m.role.toLowerCase() === "owner"
-    ) ?? null;
+    team.memberships.find((m) => m.role.toLowerCase() === "owner") ?? null;
 
   const otherMembers = team.memberships.filter((m) => m !== ownerMembership);
 
@@ -74,59 +72,74 @@ export default async function TeamPage({ params }: PageProps) {
             </div>
           </div>
 
-          {/* Info */}
-          <div className="flex-1 space-y-2">
-            <div className="flex flex-wrap items-center gap-2">
-              <h1 className="text-3xl font-bold">{team.name}</h1>
+          {/* Info + owner controls */}
+          <div className="flex-1 flex flex-col gap-3">
+            <div className="space-y-2">
+              {/* Title row + owner controls */}
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div className="flex flex-wrap items-center gap-2">
+                  <h1 className="text-3xl font-bold">{team.name}</h1>
 
-              {team.isRecruiting && (
-                <span className="rounded-full border border-emerald-500/60 bg-emerald-900/30 px-3 py-0.5 text-xs font-semibold text-emerald-300">
-                  Recruiting
-                </span>
-              )}
-            </div>
+                  {team.isRecruiting && (
+                    <span className="rounded-full border border-emerald-500/60 bg-emerald-900/30 px-3 py-0.5 text-xs font-semibold text-emerald-300">
+                      Recruiting
+                    </span>
+                  )}
+                </div>
 
-            <div className="text-sm text-slate-300 space-y-1">
-              <div>
-                <span className="font-semibold text-slate-100">Game:</span>{" "}
-                {team.game?.name ?? "Unknown"}
+                {isOwner && (
+                  <div className="flex flex-wrap items-center justify-end gap-2 text-xs">
+                    <span className="rounded-md bg-slate-800 px-2 py-1 text-slate-300">
+                      You are the team owner.
+                    </span>
+
+                    <Link
+                      href={`/teams/${team.slug}/edit`}
+                      className="inline-flex items-center justify-center rounded-md bg-slate-700 px-3 py-1.5 font-semibold text-slate-100 hover:bg-slate-600 transition"
+                    >
+                      Edit team
+                    </Link>
+
+                    <DisbandTeamButton slug={team.slug} teamName={team.name} />
+                  </div>
+                )}
               </div>
-              <div>
-                <span className="font-semibold text-slate-100">Region:</span>{" "}
-                {team.region ?? "No region set"}
-              </div>
-              {team.rank && (
+
+              {/* Meta info */}
+              <div className="text-sm text-slate-300 space-y-1">
                 <div>
-                  <span className="font-semibold text-slate-100">
-                    Team Rank:
-                  </span>{" "}
-                  {team.rank.name}
+                  <span className="font-semibold text-slate-100">Game:</span>{" "}
+                  {team.game?.name ?? "Unknown"}
                 </div>
-              )}
-              {createdDate && (
-                <div className="text-xs text-slate-500">
-                  Created on {createdDate}
+                <div>
+                  <span className="font-semibold text-slate-100">Region:</span>{" "}
+                  {team.region ?? "No region set"}
                 </div>
+                {team.rank && (
+                  <div>
+                    <span className="font-semibold text-slate-100">
+                      Team Rank:
+                    </span>{" "}
+                    {team.rank.name}
+                  </div>
+                )}
+                {createdDate && (
+                  <div className="text-xs text-slate-500">
+                    Created on {createdDate}
+                  </div>
+                )}
+              </div>
+
+              {team.bio && (
+                <p className="mt-2 text-sm text-slate-200 whitespace-pre-line">
+                  {team.bio}
+                </p>
               )}
             </div>
-
-            {team.bio && (
-              <p className="mt-2 text-sm text-slate-200 whitespace-pre-line">
-                {team.bio}
-              </p>
-            )}
-
-            {isOwner && (
-              <div className="pt-2 flex items-center gap-3">
-                <span className="rounded-md bg-slate-800 px-2 py-1 text-xs text-slate-300">
-                  You are the team owner.
-                </span>
-                <DisbandTeamButton slug={team.slug} teamName={team.name} />
-              </div>
-            )}
           </div>
         </section>
 
+        {/* Members */}
         <section className="space-y-3 rounded-xl border border-slate-700 bg-slate-900/70 p-5">
           <div className="flex items-center justify-between">
             <h2 className="text-lg font-semibold">Members</h2>
@@ -152,16 +165,12 @@ export default async function TeamPage({ params }: PageProps) {
                       <div className="text-sm font-medium">
                         {ownerMembership.user.username}
                       </div>
-                      <div className="text-[10px] text-slate-400">
-                        Owner
-                      </div>
+                      <div className="text-[10px] text-slate-400">Owner</div>
                     </div>
                   </div>
                   <div className="text-[10px] text-slate-400">
                     Joined{" "}
-                    {new Date(
-                      ownerMembership.joinedAt
-                    ).toLocaleDateString()}
+                    {new Date(ownerMembership.joinedAt).toLocaleDateString()}
                   </div>
                 </div>
               )}

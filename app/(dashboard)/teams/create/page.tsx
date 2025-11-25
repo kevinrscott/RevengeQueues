@@ -20,13 +20,15 @@ export default async function CreateTeamPage() {
 
   if (!profile) {
     return (
-      <main className="flex min-h-screen justify-center bg-gradient-to-r from-slate-900 to-slate-800 px-4 py-10 text-white">
-        <div className="w-full max-w-lg space-y-4">
-          <h1 className="text-2xl font-bold">Create a Team</h1>
-          <p className="text-sm text-slate-300">
-            You need a game profile before creating a team. Go to your profile
-            and create a game profile first.
-          </p>
+      <main className="min-h-screen bg-gradient-to-r from-slate-900 to-slate-800 p-6 text-white flex items-center justify-center">
+        <div className="w-full max-w-xl space-y-4">
+          <div className="space-y-1">
+            <h1 className="text-3xl font-bold text-slate-100">Create a Team</h1>
+            <p className="text-sm text-slate-300">
+              You need a game profile before creating a team. Go to your profile
+              and create a game profile first.
+            </p>
+          </div>
         </div>
       </main>
     );
@@ -38,16 +40,18 @@ export default async function CreateTeamPage() {
   });
 
   return (
-    <main className="flex min-h-screen justify-center bg-gradient-to-r from-slate-900 to-slate-800 px-4 py-10 text-white">
-      <div className="w-full max-w-lg space-y-6">
-        <div>
-          <h1 className="text-3xl font-bold">Create a Team</h1>
+    <main className="min-h-screen bg-gradient-to-r from-slate-900 to-slate-800 p-6 text-white flex items-center justify-center">
+      <div className="w-full max-w-xl space-y-4">
+        <div className="space-y-1">
+          <h1 className="text-3xl font-bold text-slate-100">Create a Team</h1>
           <p className="text-sm text-slate-300">
             Create a new team for your currently selected game.
           </p>
         </div>
 
-        <CreateTeamForm ranks={ranks} />
+        <div className="rounded-xl bg-slate-900 border border-slate-800 p-8 shadow-2xl">
+          <CreateTeamForm ranks={ranks} />
+        </div>
       </div>
     </main>
   );

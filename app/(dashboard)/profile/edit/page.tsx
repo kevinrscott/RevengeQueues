@@ -49,19 +49,25 @@ export default async function EditProfilePage() {
 
   return (
     <main className="min-h-screen bg-gradient-to-r from-slate-900 to-slate-800 p-6 text-white flex items-center justify-center">
-      <div className="w-full max-w-xl rounded-xl bg-slate-900 border-1 border-slate-800 p-8 shadow-2xl space-y-6">
-        <h1 className="text-3xl font-bold text-slate-100 text-center">
-          Edit Profile
-        </h1>
-        <EditProfileForm
-          initialUsername={user.username}
-          initialRegion={user.region ?? ""}
-          initialProfilePhoto={user.profilePhoto ?? ""}
-          initialIngameName={activeProfile?.ingameName ?? ""}
-          initialRankId={activeProfile?.rankId ?? null}
-          profileId={activeProfile?.id ?? null}
-          ranks={ranks}
-        />
+      <div className="w-full max-w-xl space-y-4">
+        <div className="space-y-1">
+          <h1 className="text-3xl font-bold text-slate-100">Edit Profile</h1>
+          <p className="text-sm text-slate-300">
+            Update your profile details. Changes will be visible on your public profile.
+          </p>
+        </div>
+
+        <div className="rounded-xl bg-slate-900 border border-slate-800 p-8 shadow-2xl">
+          <EditProfileForm
+            initialUsername={user.username}
+            initialRegion={user.region ?? ""}
+            initialProfilePhoto={user.profilePhoto ?? ""}
+            initialIngameName={activeProfile?.ingameName ?? ""}
+            initialRankId={activeProfile?.rankId ?? null}
+            profileId={activeProfile?.id ?? null}
+            ranks={ranks}
+          />
+        </div>
       </div>
     </main>
   );

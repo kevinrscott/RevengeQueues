@@ -9,21 +9,39 @@ type RankOption = {
 };
 
 type Props = {
+  slug: string;
+  initialName: string;
+  initialRegion: string;
+  initialBio: string;
+  initialRankId: number | null;
+  initialIsRecruiting: boolean;
+  initialLogoUrl: string | null;
   ranks: RankOption[];
 };
 
 const REGION_OPTIONS = ["NA", "EU", "SA", "AS", "OC"] as const;
 
-export default function CreateTeamForm({ ranks }: Props) {
+export default function EditTeamForm({
+  slug,
+  initialName,
+  initialRegion,
+  initialBio,
+  initialRankId,
+  initialIsRecruiting,
+  initialLogoUrl,
+  ranks,
+}: Props) {
   const router = useRouter();
 
-  const [name, setName] = useState("");
-  const [region, setRegion] = useState<string>("");
-  const [bio, setBio] = useState("");
-  const [rankId, setRankId] = useState<string>("");
-  const [isRecruiting, setIsRecruiting] = useState(false);
+  const [name, setName] = useState(initialName);
+  const [region, setRegion] = useState<string>(initialRegion ?? "");
+  const [bio, setBio] = useState(initialBio ?? "");
+  const [rankId, setRankId] = useState<string>(
+    initialRankId ? String(initialRankId) : ""
+  );
+  const [isRecruiting, setIsRecruiting] = useState(initialIsRecruiting);
 
-  const [logoPreview, setLogoPreview] = useState<string | null>(null);
+  const [logoPreview, setLogoPreview] = useState<string | null>(initialLogoUrl);
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
@@ -59,7 +77,7 @@ export default function CreateTeamForm({ ranks }: Props) {
     setSubmitting(true);
 
     try {
-      let logoUrl: string | null = null;
+      let logoUrl: string | undefined = undefined;
 
       if (logoFile) {
         const formData = new FormData();
@@ -82,8 +100,8 @@ export default function CreateTeamForm({ ranks }: Props) {
         logoUrl = uploadData.url;
       }
 
-      const res = await fetch("/api/teams", {
-        method: "POST",
+      const res = await fetch(`/api/teams/${encodeURIComponent(slug)}`, {
+        method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           name: name.trim(),
@@ -91,29 +109,29 @@ export default function CreateTeamForm({ ranks }: Props) {
           isRecruiting,
           bio: bio.trim() || null,
           rankId: rankId ? Number(rankId) : null,
-          logoUrl,
+          ...(logoUrl !== undefined ? { logoUrl } : {}),
         }),
       });
 
       const data = await res.json();
 
       if (!res.ok) {
-        setError(data.error || "Failed to create team.");
+        setError(data.error || "Failed to update team.");
         setSubmitting(false);
         return;
       }
 
-      router.push(`/teams/${encodeURIComponent(data.team.slug)}`);
+      router.push(`/teams/${encodeURIComponent(slug)}`);
       router.refresh();
     } catch (err) {
       console.error(err);
-      setError("Unexpected error while creating team.");
+      setError("Unexpected error while updating team.");
       setSubmitting(false);
     }
   }
 
   function handleCancel() {
-    router.push("/teams");
+    router.push(`/teams/${encodeURIComponent(slug)}`);
   }
 
   return (
@@ -150,7 +168,7 @@ export default function CreateTeamForm({ ranks }: Props) {
         />
 
         <p className="text-xs text-slate-400">
-          Click the logo to upload a team image (optional).
+          Click the logo to change your team image.
         </p>
       </div>
 
@@ -224,18 +242,18 @@ export default function CreateTeamForm({ ranks }: Props) {
             onChange={(e) => setIsRecruiting(e.target.checked)}
             className="h-4 w-4 rounded border-slate-600 bg-slate-800 text-cyan-500"
           />
-          Open for recruitment (Adds to LFG Page)
+          Open for recruitment (Shows on LFG Page)
         </label>
       </div>
 
       <div className="flex gap-3 pt-2">
         <button
-          type="button"
-          onClick={handleCancel}
-          className="flex-1 rounded-lg bg-slate-700 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-600 transition"
-          disabled={submitting}
-        >
-          Cancel
+            type="button"
+            onClick={handleCancel}
+            className="flex-1 rounded-lg bg-slate-700 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-600 transition"
+            disabled={submitting}
+            >
+            Cancel
         </button>
 
         <button
@@ -243,7 +261,7 @@ export default function CreateTeamForm({ ranks }: Props) {
           disabled={submitting}
           className="flex-1 rounded-lg bg-cyan-500 px-4 py-2 text-sm font-semibold text-slate-900 hover:bg-cyan-400 transition disabled:opacity-60"
         >
-          {submitting ? "Creating..." : "Create team"}
+          {submitting ? "Saving changes..." : "Save changes"}
         </button>
       </div>
     </form>

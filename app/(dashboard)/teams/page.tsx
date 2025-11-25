@@ -76,16 +76,26 @@ if (memberships.length === 0) {
           <div>
             <h1 className="text-3xl font-bold">Your Teams</h1>
             <p className="text-sm text-slate-300">
-              Manage all the teams you&apos;re a part of.
+              Manage all the teams you&apos;re a part of. (Maximum of 3)
             </p>
           </div>
 
-          <Link
-            href="/teams/create"
-            className="rounded-md bg-cyan-600 px-4 py-2 text-sm font-semibold text-white hover:bg-cyan-500 transition"
-          >
-            Create new team
-          </Link>
+          {memberships.length < 3 ? (
+            <Link
+              href="/teams/create"
+              className="rounded-md bg-cyan-600 px-4 py-2 text-sm font-semibold text-white hover:bg-cyan-500 transition"
+            >
+              Create new team
+            </Link>
+          ) : (
+            <button
+              disabled
+              className="rounded-md bg-slate-700 px-4 py-2 text-sm font-semibold text-slate-400 cursor-not-allowed opacity-60"
+              title="You have reached the maximum of 3 teams"
+            >
+              Create new team
+            </button>
+          )}
         </div>
 
         <div className="space-y-3">

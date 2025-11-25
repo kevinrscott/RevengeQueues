@@ -211,7 +211,7 @@ export default function Topbar() {
                       key={`team-${team.id}`}
                       href={`/teams/${team.slug}`}
                       onClick={handleResultClick}
-                      className="flex items-center justify-between px-3 py-2 hover:bg-stone-800 text-stone-100"
+                      className="flex items-center justify-between px-3 py-2 hover:bg-slate-800 text-stone-100"
                     >
                       <div>
                         <div className="text-xs font-medium">{team.name}</div>
@@ -249,15 +249,15 @@ export default function Topbar() {
               </button>
 
               <div
-                className={`absolute right-0 mt-2 w-40 rounded-md bg-slate-950 border border-slate-700 shadow-lg text-sm z-50 transform origin-top transition-all duration-150 ${
+                className={`absolute right-0 mt-2 w-40 rounded-md bg-slate-950 border border-slate-700 shadow-lg text-sm z-50 transition-opacity duration-150 ${
                   userMenuOpen
-                    ? "opacity-100 scale-100 translate-y-0 pointer-events-auto"
-                    : "opacity-0 scale-95 -translate-y-1 pointer-events-none"
+                    ? "opacity-100 pointer-events-auto"
+                    : "opacity-0 pointer-events-none"
                 }`}
               >
                 <Link
                   href={username ? `/profile/${username}` : "/profile"}
-                  className="block px-3 py-2 hover:bg-stone-800 text-stone-100"
+                  className="block px-3 py-2 hover:bg-slate-700 text-stone-100"
                   onClick={() => setUserMenuOpen(false)}
                 >
                   Profile
@@ -265,7 +265,7 @@ export default function Topbar() {
 
                 <Link
                   href="/teams"
-                  className="block px-3 py-2 hover:bg-stone-800 text-stone-100"
+                  className="block px-3 py-2 hover:bg-slate-700 text-stone-100"
                   onClick={() => setUserMenuOpen(false)}
                 >
                   Teams
