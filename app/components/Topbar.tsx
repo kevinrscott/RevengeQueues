@@ -4,7 +4,7 @@ import { useEffect, useState, useRef } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useSession } from "next-auth/react";
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, Bell } from "lucide-react";
 import LogoutButton from "@/app/components/LogoutButton";
 
 function getPageTitle(pathname: string): string {
@@ -41,6 +41,19 @@ type TeamResult = {
   slug: string;
 };
 
+type NotificationItem = {
+  id: number;
+  type: string;
+  title: string;
+  body: string;
+  createdAt: string;
+  readAt: string | null;
+  teamName?: string | null;
+  teamSlug?: string | null;
+  fromUserName?: string | null;
+  requestUserName?: string | null;
+};
+
 export default function Topbar() {
   const { data: session } = useSession();
   const pathname = usePathname();
@@ -53,12 +66,24 @@ export default function Topbar() {
   const [players, setPlayers] = useState<PlayerResult[]>([]);
   const [teams, setTeams] = useState<TeamResult[]>([]);
 
+  const [notifOpen, setNotifOpen] = useState(false);
+  const [notifLoading, setNotifLoading] = useState(false);
+  const [notifications, setNotifications] = useState<NotificationItem[]>([]);
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  // 🔹 NEW: track team count
+  const [teamCount, setTeamCount] = useState(0);
+  const MAX_TEAMS = 3;
+  const hasReachedTeamLimit = teamCount >= MAX_TEAMS;
+
   const title = getPageTitle(pathname);
   const username = (session?.user as any)?.username as string | undefined;
 
   const searchRef = useRef<HTMLDivElement>(null);
   const userMenuRef = useRef<HTMLDivElement>(null);
+  const notifRef = useRef<HTMLDivElement>(null);
 
+  // Close search when clicking outside
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
       if (
@@ -72,6 +97,7 @@ export default function Topbar() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  // Close user menu when clicking outside
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
       if (
@@ -85,6 +111,21 @@ export default function Topbar() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  // Close notifications dropdown when clicking outside
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (
+        notifRef.current &&
+        !notifRef.current.contains(e.target as Node)
+      ) {
+        setNotifOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  // Search effect
   useEffect(() => {
     const trimmed = searchTerm.trim();
 
@@ -138,6 +179,70 @@ export default function Topbar() {
     setSearchOpen(false);
   }
 
+  // Fetch notifications when session is available
+  useEffect(() => {
+    if (!session?.user) return;
+
+    let cancelled = false;
+
+    async function loadNotifications() {
+      try {
+        setNotifLoading(true);
+        const res = await fetch("/api/notifications");
+        if (!res.ok) throw new Error("Failed to load notifications");
+        const data = await res.json();
+
+        if (cancelled) return;
+
+        setNotifications(data.notifications as NotificationItem[]);
+        setUnreadCount(data.unreadCount as number);
+        setTeamCount((data.teamCount as number) ?? 0); // 🔹 NEW
+      } catch (err) {
+        console.error("Notifications error:", err);
+      } finally {
+        if (!cancelled) setNotifLoading(false);
+      }
+    }
+
+    loadNotifications();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [session]);
+
+  async function handleNotificationAction(
+    notificationId: number,
+    action: "accept" | "reject"
+  ) {
+    try {
+      const res = await fetch("/api/team-requests/respond", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ notificationId, action }),
+      });
+
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        console.error("Action failed:", data.error || "Unknown error");
+        return;
+      }
+
+      setNotifications((prev) => prev.filter((n) => n.id !== notificationId));
+      setUnreadCount((prev) => Math.max(0, prev - 1));
+
+      // Optional: if backend adds them to a team on accept, you could bump teamCount here
+      if (action === "accept") {
+        setTeamCount((prev) => prev + 1);
+      }
+    } catch (err) {
+      console.error("Action error:", err);
+    }
+  }
+
+  const badgeText =
+    unreadCount > 9 ? "9+" : unreadCount > 0 ? String(unreadCount) : null;
+
   return (
     <header className="w-full border-b border-black bg-slate-950 px-4 py-5 flex items-center justify-between">
       <span className="text-lg font-semibold pl-2 flex-shrink-0">
@@ -145,6 +250,7 @@ export default function Topbar() {
       </span>
 
       <div className="flex items-center gap-4">
+        {/* Search */}
         <div ref={searchRef} className="relative flex-1 max-w-2xl">
           <input
             type="text"
@@ -230,6 +336,136 @@ export default function Topbar() {
           )}
         </div>
 
+        {session?.user && (
+          <div ref={notifRef} className="relative flex-shrink-0">
+            <button
+              type="button"
+              onClick={() => setNotifOpen((prev) => !prev)}
+              className="relative flex h-9 w-9 items-center justify-center rounded-full
+             transition transform hover:scale-110 hover:brightness-150"
+            >
+              <Bell size={18} className="text-slate-200" />
+              {badgeText && (
+                <span className="absolute -top-1 -right-1 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-red-600 px-1 text-[9px] font-bold text-white">
+                  {badgeText}
+                </span>
+              )}
+            </button>
+
+            <div
+              className={`absolute right-0 mt-2 w-80 rounded-md bg-slate-950 border border-slate-700 shadow-lg text-sm z-50 transition-opacity duration-150 ${
+                notifOpen
+                  ? "opacity-100 pointer-events-auto"
+                  : "opacity-0 pointer-events-none"
+              }`}
+            >
+              <div className="px-3 py-2 border-b border-slate-800 flex items-center justify-between">
+                <span className="text-xs font-semibold uppercase tracking-wide text-slate-400">
+                  Notifications
+                </span>
+                {notifLoading && (
+                  <span className="text-[10px] text-slate-500">Loading...</span>
+                )}
+              </div>
+
+              {notifications.length === 0 && !notifLoading && (
+                <div className="px-3 py-3 text-xs text-slate-400">
+                  No notifications yet.
+                </div>
+              )}
+
+              {notifications.length > 0 && (
+                <div className="max-h-80 overflow-y-auto py-1">
+                  {notifications.map((n) => {
+                    const isUnread = !n.readAt;
+                    const isActionable =
+                      n.type === "TEAM_INVITE" || n.type === "TEAM_JOIN_REQUEST";
+
+                    const teamLink = n.teamSlug
+                      ? `/teams/${n.teamSlug}`
+                      : undefined;
+
+                    return (
+                      <div
+                        key={n.id}
+                        className={`px-3 py-2 text-xs border-b border-slate-800 last:border-b-0 ${
+                          isUnread ? "bg-slate-900" : "bg-slate-950"
+                        }`}
+                      >
+                        <div className="flex justify-between gap-2">
+                          <div>
+                            <div className="font-semibold text-slate-100">
+                              {n.title}
+                            </div>
+                            <div className="text-[11px] text-slate-400">
+                              {n.body}
+                            </div>
+                            {n.fromUserName && (
+                              <div className="text-[11px] text-slate-500 mt-0.5">
+                                From:{" "}
+                                <span className="font-medium">
+                                  {n.fromUserName}
+                                </span>
+                              </div>
+                            )}
+                            {teamLink && (
+                              <div className="mt-1">
+                                <Link
+                                  href={teamLink}
+                                  className="text-[11px] text-cyan-400 hover:underline"
+                                >
+                                  View team
+                                </Link>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+
+                        {isActionable && (
+                          <div className="mt-2 flex gap-2">
+                            {/* Accept with tooltip when at team limit */}
+                            <div className="relative flex-1 group">
+                              <button
+                                onClick={() =>
+                                  handleNotificationAction(n.id, "accept")
+                                }
+                                disabled={hasReachedTeamLimit}
+                                className={`w-full rounded-md px-2 py-1 text-[11px] font-semibold text-white
+                                  ${
+                                    hasReachedTeamLimit
+                                      ? "bg-emerald-700 opacity-70 cursor-not-allowed"
+                                      : "bg-emerald-600 hover:bg-emerald-500"
+                                  }`}
+                              >
+                                Accept
+                              </button>
+                              {hasReachedTeamLimit && (
+                                <div className="pointer-events-none absolute top-[110%] left-0 z-10 whitespace-nowrap rounded bg-slate-900 px-2 py-1 text-[10px] text-slate-100 opacity-0 shadow-lg transition-opacity duration-150 group-hover:opacity-100">
+                                  Already in 3 teams (limit). Leave a team to accept.
+                                </div>
+                              )}
+                            </div>
+
+                            <button
+                              onClick={() =>
+                                handleNotificationAction(n.id, "reject")
+                              }
+                              className="flex-1 rounded-md bg-red-600 px-2 py-1 text-[11px] font-semibold text-white hover:bg-red-500"
+                            >
+                              Deny
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* User menu */}
         <div ref={userMenuRef} className="relative flex-shrink-0">
           {session?.user?.name ? (
             <>

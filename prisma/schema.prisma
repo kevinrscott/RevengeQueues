@@ -3,8 +3,8 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
   directUrl = env("POSTGRES_URL_NON_POOLING")
 }
 
@@ -14,6 +14,18 @@ enum RegionCode {
   SA
   AS
   OC
+}
+
+// Notifications
+enum NotificationType {
+  TEAM_INVITE
+  TEAM_JOIN_REQUEST
+  TEAM_REQUEST_ACCEPTED
+  TEAM_REQUEST_REJECTED
+  SCRIM_REQUEST_RECEIVED
+  SCRIM_REQUEST_ACCEPTED
+  SCRIM_REQUEST_REJECTED
+  GENERIC
 }
 
 model User {
@@ -34,6 +46,7 @@ model User {
   teamRequestsAsUser  TeamRequest[]     @relation("TeamRequestUser")
   teamRequestsCreated TeamRequest[]     @relation("TeamRequestCreatedBy")
   scrimRequests       ScrimRequest[]    @relation("ScrimRequestRequestedBy")
+  notifications       Notification[]
 }
 
 model Game {
@@ -48,11 +61,11 @@ model Game {
 }
 
 model GameRank {
-  id        Int      @id @default(autoincrement())
-  name      String
-  order     Int
+  id    Int    @id @default(autoincrement())
+  name  String
+  order Int
 
-  iconUrl   String?
+  iconUrl String?
 
   // FKs
   gameId Int
@@ -62,8 +75,8 @@ model GameRank {
   profiles UserGameProfile[]
   teams    Team[]
 
-  @@index([gameId])
   @@unique([gameId, name])
+  @@index([gameId])
 }
 
 model UserGameProfile {
@@ -77,27 +90,27 @@ model UserGameProfile {
   // FKs
   userId Int
   gameId Int
-  rankId Int?   // FK to GameRank
+  rankId Int?
 
   // Relations
   user User      @relation(fields: [userId], references: [id])
   game Game      @relation(fields: [gameId], references: [id])
   rank GameRank? @relation(fields: [rankId], references: [id])
 
+  @@unique([userId, gameId], name: "user_game_unique")
   @@index([userId])
   @@index([gameId])
   @@index([rankId])
-  @@unique([userId, gameId], name: "user_game_unique")
 }
 
 model Team {
-  id        Int      @id @default(autoincrement())
+  id        Int        @id @default(autoincrement())
   name      String
-  slug      String   @unique
+  slug      String     @unique
   region    RegionCode
   logoUrl   String?
   bio       String?
-  createdAt DateTime @default(now())
+  createdAt DateTime   @default(now())
 
   isRecruiting Boolean @default(false)
 
@@ -106,12 +119,13 @@ model Team {
   rankId Int?
 
   // Relations
-  game          Game            @relation(fields: [gameId], references: [id])
-  rank          GameRank?       @relation(fields: [rankId], references: [id])
+  game          Game             @relation(fields: [gameId], references: [id])
+  rank          GameRank?        @relation(fields: [rankId], references: [id])
   memberships   TeamMembership[]
   requests      TeamRequest[]
   hostedScrims  Scrim[]
   scrimRequests ScrimRequest[]
+  notifications Notification[]
 
   @@index([gameId])
   @@index([rankId])
@@ -130,17 +144,17 @@ model TeamMembership {
   user User @relation(fields: [userId], references: [id])
   team Team @relation(fields: [teamId], references: [id])
 
+  @@unique([userId, teamId], name: "user_team_unique")
   @@index([userId])
   @@index([teamId])
-  @@unique([userId, teamId], name: "user_team_unique") // can't join same team twice
 }
 
 model TeamRequest {
-  id             Int      @id @default(autoincrement())
-  kind           String   // e.g. "invite" or "join_request"
-  status         String   // e.g. "pending", "accepted", "rejected"
-  createdAt      DateTime @default(now())
-  respondedAt    DateTime?
+  id          Int       @id @default(autoincrement())
+  kind        String // e.g. "invite" or "join_request"
+  status      String // e.g. "pending", "accepted", "rejected"
+  createdAt   DateTime  @default(now())
+  respondedAt DateTime?
 
   // FKs
   teamId          Int
@@ -148,9 +162,10 @@ model TeamRequest {
   createdByUserId Int
 
   // Relations
-  team      Team @relation(fields: [teamId], references: [id])
-  user      User @relation("TeamRequestUser", fields: [userId], references: [id])
-  createdBy User @relation("TeamRequestCreatedBy", fields: [createdByUserId], references: [id])
+  team          Team           @relation(fields: [teamId], references: [id])
+  user          User           @relation("TeamRequestUser", fields: [userId], references: [id])
+  createdBy     User           @relation("TeamRequestCreatedBy", fields: [createdByUserId], references: [id])
+  notifications Notification[]
 
   @@index([teamId])
   @@index([userId])
@@ -158,32 +173,33 @@ model TeamRequest {
 }
 
 model Scrim {
-  id          Int      @id @default(autoincrement())
-  bestOf      Int      // best_of
+  id          Int       @id @default(autoincrement())
+  bestOf      Int
   gamemode    String
   map         String
   scrimCode   String
   scheduledAt DateTime?
   status      String
-  createdAt   DateTime @default(now())
+  createdAt   DateTime  @default(now())
 
   // FKs
   hostTeamId Int
 
   // Relations
-  hostTeam Team           @relation(fields: [hostTeamId], references: [id])
-  requests ScrimRequest[]
+  hostTeam      Team           @relation(fields: [hostTeamId], references: [id])
+  requests      ScrimRequest[]
+  notifications Notification[]
 
+  @@unique([scrimCode])
   @@index([hostTeamId])
-  @@unique([scrimCode])   // each scrim_code unique
 }
 
 model ScrimRequest {
-  id            Int      @id @default(autoincrement())
-  status        String
-  requestedAt   DateTime @default(now())
-  respondedAt   DateTime?
-  codeSent      Boolean  @default(false)
+  id          Int       @id @default(autoincrement())
+  status      String
+  requestedAt DateTime  @default(now())
+  respondedAt DateTime?
+  codeSent    Boolean   @default(false)
 
   // FKs
   scrimId           Int
@@ -191,11 +207,40 @@ model ScrimRequest {
   requestedByUserId Int
 
   // Relations
-  scrim       Scrim @relation(fields: [scrimId], references: [id])
-  team        Team  @relation(fields: [teamId], references: [id])
-  requestedBy User  @relation("ScrimRequestRequestedBy", fields: [requestedByUserId], references: [id])
+  scrim         Scrim          @relation(fields: [scrimId], references: [id])
+  team          Team           @relation(fields: [teamId], references: [id])
+  requestedBy   User           @relation("ScrimRequestRequestedBy", fields: [requestedByUserId], references: [id])
+  notifications Notification[]
 
   @@index([scrimId])
   @@index([teamId])
   @@index([requestedByUserId])
+}
+
+// Notifications model
+model Notification {
+  id          Int              @id @default(autoincrement())
+  recipientId Int
+  type        NotificationType
+
+  title     String
+  body      String
+  createdAt DateTime  @default(now())
+  readAt    DateTime? // null = unread
+
+  teamId         Int?
+  teamRequestId  Int?
+  scrimId        Int?
+  scrimRequestId Int?
+
+  metadata Json?
+
+  // Relations
+  recipient    User          @relation(fields: [recipientId], references: [id])
+  team         Team?         @relation(fields: [teamId], references: [id], onDelete: SetNull)
+  teamRequest  TeamRequest?  @relation(fields: [teamRequestId], references: [id], onDelete: SetNull)
+  scrim        Scrim?        @relation(fields: [scrimId], references: [id], onDelete: SetNull)
+  scrimRequest ScrimRequest? @relation(fields: [scrimRequestId], references: [id], onDelete: SetNull)
+
+  @@index([recipientId, readAt, createdAt])
 }

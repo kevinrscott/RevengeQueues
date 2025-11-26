@@ -35,6 +35,10 @@ export default async function LfgPage() {
   const activeProfile = user.profiles[0];
   const currentGame = activeProfile.game;
 
+  const viewerTeamsCount = await prisma.teamMembership.count({
+    where: { userId },
+  });
+
   const [ranks, lftProfiles, lfpTeams, manageableTeams] = await Promise.all([
     prisma.gameRank.findMany({
       where: { gameId: currentGame.id },
@@ -112,6 +116,7 @@ export default async function LfgPage() {
               region: user.region,
             },
           }}
+          viewerTeamsCount={viewerTeamsCount}
         />
       </div>
     </main>

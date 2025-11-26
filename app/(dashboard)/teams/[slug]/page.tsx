@@ -5,6 +5,8 @@ import { notFound, redirect } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 import DisbandTeamButton from "./DisbandTeamButton";
+import LeaveTeamButton from "./LeaveTeamButton";
+import ManageMemberButton from "./ManageMemberButton";
 
 type PageProps = {
   params: Promise<{ slug: string }>;
@@ -41,6 +43,17 @@ export default async function TeamPage({ params }: PageProps) {
     (m) => m.userId === userId && m.role.toLowerCase() === "owner"
   );
 
+  const viewerMembership =
+  team.memberships.find((m) => m.userId === userId) ?? null;
+
+  const canLeave =
+  viewerMembership &&
+  viewerMembership.role.toLowerCase() !== "owner";
+
+  const viewerRole = viewerMembership
+  ? viewerMembership.role.toLowerCase()
+  : null;
+
   const ownerMembership =
     team.memberships.find((m) => m.role.toLowerCase() === "owner") ?? null;
 
@@ -53,9 +66,7 @@ export default async function TeamPage({ params }: PageProps) {
   return (
     <main className="flex min-h-screen justify-center bg-gradient-to-r from-slate-900 to-slate-800 px-4 py-10 text-white">
       <div className="w-full max-w-3xl space-y-8">
-        {/* Header / hero */}
         <section className="flex flex-col gap-6 rounded-xl border border-slate-700 bg-slate-900/70 p-5 md:flex-row md:items-center">
-          {/* Logo */}
           <div className="flex items-center justify-center md:justify-start">
             <div className="h-24 w-24 rounded-full bg-slate-800 overflow-hidden border border-slate-700 flex items-center justify-center text-xl font-semibold">
               {team.logoUrl ? (
@@ -72,10 +83,8 @@ export default async function TeamPage({ params }: PageProps) {
             </div>
           </div>
 
-          {/* Info + owner controls */}
           <div className="flex-1 flex flex-col gap-3">
             <div className="space-y-2">
-              {/* Title row + owner controls */}
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div className="flex flex-wrap items-center gap-2">
                   <h1 className="text-3xl font-bold">{team.name}</h1>
@@ -103,9 +112,14 @@ export default async function TeamPage({ params }: PageProps) {
                     <DisbandTeamButton slug={team.slug} teamName={team.name} />
                   </div>
                 )}
+
+                {!isOwner && canLeave && (
+                  <div className="flex flex-wrap items-center justify-end gap-2 text-xs">
+                    <LeaveTeamButton slug={team.slug} teamName={team.name} />
+                  </div>
+                )}
               </div>
 
-              {/* Meta info */}
               <div className="text-sm text-slate-300 space-y-1">
                 <div>
                   <span className="font-semibold text-slate-100">Game:</span>{" "}
@@ -139,7 +153,6 @@ export default async function TeamPage({ params }: PageProps) {
           </div>
         </section>
 
-        {/* Members */}
         <section className="space-y-3 rounded-xl border border-slate-700 bg-slate-900/70 p-5">
           <div className="flex items-center justify-between">
             <h2 className="text-lg font-semibold">Members</h2>
@@ -175,29 +188,49 @@ export default async function TeamPage({ params }: PageProps) {
                 </div>
               )}
 
-              {otherMembers.map((m) => (
-                <div
-                  key={m.id}
-                  className="flex items-center justify-between rounded-lg border border-slate-800 bg-slate-950 px-3 py-2"
-                >
-                  <div className="flex items-center gap-2">
-                    <div className="h-7 w-7 rounded-full bg-slate-800 flex items-center justify-center text-xs font-semibold">
-                      {m.user.username[0]?.toUpperCase() ?? "?"}
+              {otherMembers.map((m) => {
+                const memberRoleLower = (m.role || "member").toLowerCase();
+                const canManageThisMember =
+                  viewerRole &&
+                  (viewerRole === "owner" ||
+                    (viewerRole === "manager" &&
+                      memberRoleLower !== "owner")) &&
+                  m.userId !== userId;
+
+                return (
+                  <div
+                    key={m.id}
+                    className="flex items-center justify-between rounded-lg border border-slate-800 bg-slate-950 px-3 py-2"
+                  >
+                    <div className="flex items-center gap-2">
+                      <div className="h-7 w-7 rounded-full bg-slate-800 flex items-center justify-center text-xs font-semibold">
+                        {m.user.username[0]?.toUpperCase() ?? "?"}
+                      </div>
+                      <div>
+                        <div className="text-sm font-medium">
+                          {m.user.username}
+                        </div>
+                        <div className="text-[10px] text-slate-400">
+                          {m.role || "Member"}
+                        </div>
+                      </div>
                     </div>
-                    <div>
-                      <div className="text-sm font-medium">
-                        {m.user.username}
-                      </div>
-                      <div className="text-[10px] text-slate-400">
-                        {m.role || "Member"}
-                      </div>
+                    <div className="flex items-center gap-3 text-[10px] text-slate-400">
+                      <span>
+                        Joined {new Date(m.joinedAt).toLocaleDateString()}
+                      </span>
+                      {canManageThisMember && (
+                        <ManageMemberButton
+                          slug={team.slug}
+                          membershipId={m.id}
+                          username={m.user.username}
+                          currentRole={m.role || "Member"}
+                        />
+                      )}
                     </div>
                   </div>
-                  <div className="text-[10px] text-slate-400">
-                    Joined {new Date(m.joinedAt).toLocaleDateString()}
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </section>

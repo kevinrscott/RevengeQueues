@@ -4,10 +4,14 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { prisma } from "@/app/lib/prisma";
 import Image from "next/image";
+import LookingForTeamToggle from "../LookingForTeamToggle";
+import InviteToTeamButton from "../InviteToTeamButton";
 
 type PageProps = {
   params: Promise<{ username: string }>;
 };
+
+type TeamSummary = { id: number; name: string };
 
 export default async function ProfilePage({ params }: PageProps) {
   const { username } = await params;
@@ -29,7 +33,7 @@ export default async function ProfilePage({ params }: PageProps) {
       profiles: {
         include: {
           game: true,
-          rank: true
+          rank: true,
         },
       },
     },
@@ -42,10 +46,39 @@ export default async function ProfilePage({ params }: PageProps) {
   const activeProfile = user.profiles[0] || null;
   const isOwnProfile = viewerId !== null && viewerId === user.id;
 
+  const teamCount = await prisma.teamMembership.count({
+    where: { userId: user.id },
+  });
+  const maxTeamsReached = teamCount >= 3;
+
+  let inviteTeams: TeamSummary[] = [];
+  if (!isOwnProfile && viewerId !== null && activeProfile) {
+    const teams = await prisma.team.findMany({
+      where: {
+        gameId: activeProfile.gameId,
+        memberships: {
+          some: {
+            userId: viewerId,
+            role: {
+              in: ["owner", "manager"],
+              mode: "insensitive",
+            },
+          },
+        },
+      },
+      select: {
+        id: true,
+        name: true,
+      },
+    });
+
+    inviteTeams = teams;
+  }
+
   return (
     <main className="min-h-screen bg-gradient-to-r from-slate-900 to-slate-800 p-6 text-white">
       <div className="w-full max-w-xl max-h-[80vh] border-1 border-slate-800 overflow-y-auto rounded-xl bg-slate-900 p-8 shadow-2xl backdrop-blur space-y-6">
-        <div className="flex items-center justify-between gap-4">
+        <div className="flex items-start justify-between gap-4">
           <div className="flex items-center gap-4">
             <div className="h-24 w-24 rounded-full bg-slate-800 overflow-hidden">
               {user.profilePhoto ? (
@@ -76,14 +109,35 @@ export default async function ProfilePage({ params }: PageProps) {
             </div>
           </div>
 
-          {isOwnProfile && (
-            <Link
-              href="/profile/edit"
-              className="rounded-lg bg-slate-700 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-600 transition"
-            >
-              Edit Profile
-            </Link>
-          )}
+          <div className="flex items-center gap-3">
+            {isOwnProfile && activeProfile && (
+              <LookingForTeamToggle
+                profileId={activeProfile.id}
+                initialLooking={activeProfile.lookingForTeam}
+                maxTeamsReached={maxTeamsReached}
+              />
+            )}
+
+            {isOwnProfile && (
+              <Link
+                href="/profile/edit"
+                className="rounded-lg bg-slate-700 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-600 transition"
+              >
+                Edit Profile
+              </Link>
+            )}
+
+            {!isOwnProfile &&
+              viewerId !== null &&
+              activeProfile &&
+              inviteTeams.length > 0 && (
+                <InviteToTeamButton
+                  targetUserId={user.id}
+                  teams={inviteTeams}
+                  lookingForTeam={activeProfile.lookingForTeam}
+                />
+              )}
+          </div>
         </div>
 
         {activeProfile ? (
@@ -120,7 +174,6 @@ export default async function ProfilePage({ params }: PageProps) {
               </div>
             </div>
           </div>
-
         ) : (
           <div className="rounded-lg border border-slate-700 bg-slate-900/70 p-5 text-sm text-slate-300">
             {isOwnProfile

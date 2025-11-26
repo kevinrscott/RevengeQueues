@@ -14,11 +14,24 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Invalid user" }, { status: 400 });
   }
 
-  const body = await req.json();
+  let body: unknown;
+  try {
+    body = await req.json();
+  } catch {
+    return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
+  }
+
   const { profileId, lookingForTeam } = body as {
-    profileId: number;
-    lookingForTeam: boolean;
+    profileId?: number;
+    lookingForTeam?: boolean;
   };
+
+  if (typeof profileId !== "number" || typeof lookingForTeam !== "boolean") {
+    return NextResponse.json(
+      { error: "profileId (number) and lookingForTeam (boolean) are required" },
+      { status: 400 }
+    );
+  }
 
   const profile = await prisma.userGameProfile.findFirst({
     where: { id: profileId, userId },
@@ -26,6 +39,22 @@ export async function POST(req: Request) {
 
   if (!profile) {
     return NextResponse.json({ error: "Profile not found" }, { status: 404 });
+  }
+
+  if (lookingForTeam) {
+    const membershipCount = await prisma.teamMembership.count({
+      where: { userId },
+    });
+
+    if (membershipCount >= 3) {
+      return NextResponse.json(
+        {
+          error:
+            "You are already in the maximum number of teams (3). Leave a team before enabling Looking for Team.",
+        },
+        { status: 400 }
+      );
+    }
   }
 
   const updated = await prisma.userGameProfile.update({
