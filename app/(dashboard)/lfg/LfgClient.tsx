@@ -69,6 +69,12 @@ export default function LfgClient({
   const [joinError, setJoinError] = useState<string | null>(null);
   const [joinSuccess, setJoinSuccess] = useState<string | null>(null);
 
+  const [playerPage, setPlayerPage] = useState(1);
+  const [teamPage, setTeamPage] = useState(1);
+
+  const PLAYER_PAGE_SIZE = 10;
+  const TEAM_PAGE_SIZE = 10;
+
   const manageableMyTeams =
   viewerId == null
     ? []
@@ -177,6 +183,28 @@ export default function LfgClient({
     return t.rank?.id === Number(teamRankFilter);
   });
 
+  const playerTotalPages = Math.max(
+    1,
+    Math.ceil(filteredLftProfiles.length / PLAYER_PAGE_SIZE)
+  );
+  const teamTotalPages = Math.max(
+    1,
+    Math.ceil(filteredLfpTeams.length / TEAM_PAGE_SIZE)
+  );
+
+  const safePlayerPage = Math.min(playerPage, playerTotalPages);
+  const safeTeamPage = Math.min(teamPage, teamTotalPages);
+
+  const paginatedLftProfiles = filteredLftProfiles.slice(
+    (safePlayerPage - 1) * PLAYER_PAGE_SIZE,
+    safePlayerPage * PLAYER_PAGE_SIZE
+  );
+
+  const paginatedLfpTeams = filteredLfpTeams.slice(
+    (safeTeamPage - 1) * TEAM_PAGE_SIZE,
+    safeTeamPage * TEAM_PAGE_SIZE
+  );
+
   async function toggleLookingForTeam(looking: boolean) {
     if (looking && hasReachedTeamLimit) {
       console.warn("Already at max teams, cannot start looking for team.");
@@ -257,7 +285,6 @@ export default function LfgClient({
 
   return (
     <div className="space-y-8">
-      {/* Filters */}
       <section className="bg-slate-900/70 border border-slate-800 rounded-xl p-4 flex flex-wrap gap-4 items-center">
         <div>
           <label className="block text-xs uppercase tracking-wide text-slate-400">
@@ -265,7 +292,10 @@ export default function LfgClient({
           </label>
           <select
             value={playerRankFilter}
-            onChange={(e) => setPlayerRankFilter(e.target.value)}
+            onChange={(e) => {
+              setPlayerRankFilter(e.target.value);
+              setPlayerPage(1);
+            }}
             className="mt-1 rounded-md bg-slate-800 border border-slate-700 px-3 py-2 text-sm"
           >
             <option value="">Any</option>
@@ -283,7 +313,10 @@ export default function LfgClient({
           </label>
           <select
             value={teamRankFilter}
-            onChange={(e) => setTeamRankFilter(e.target.value)}
+            onChange={(e) => {
+              setTeamRankFilter(e.target.value);
+              setTeamPage(1);
+            }}
             className="mt-1 rounded-md bg-slate-800 border border-slate-700 px-3 py-2 text-sm"
           >
             <option value="">Any</option>
@@ -367,10 +400,16 @@ export default function LfgClient({
                 No players currently looking for a team.
               </p>
             )}
-            {filteredLftProfiles.map((p) => {
+            {paginatedLftProfiles.map((p) => {
               const isSelf = viewerId != null && p.user.id === viewerId;
-              const canInvite =
-                !isSelf && viewerId != null && manageableMyTeams.length > 0;
+
+              const hasInviteableTeam =
+                viewerId != null &&
+                manageableMyTeams.some(
+                  (t) => !t.memberships.some((m) => m.userId === p.user.id)
+                );
+
+              const canInvite = !isSelf && hasInviteableTeam;
 
               return (
                 <div
@@ -406,9 +445,39 @@ export default function LfgClient({
               );
             })}
           </div>
+          {filteredLftProfiles.length > PLAYER_PAGE_SIZE && (
+            <div className="flex items-center justify-between pt-2 text-xs text-slate-400">
+              <span>
+                Showing{" "}
+                {(safePlayerPage - 1) * PLAYER_PAGE_SIZE + 1}–
+                {Math.min(safePlayerPage * PLAYER_PAGE_SIZE, filteredLftProfiles.length)}{" "}
+                of {filteredLftProfiles.length}
+              </span>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setPlayerPage((p) => Math.max(1, p - 1))}
+                  disabled={safePlayerPage === 1}
+                  className="px-2 py-1 rounded bg-slate-800 disabled:opacity-40"
+                >
+                  Previous
+                </button>
+                <span>
+                  Page {safePlayerPage} of {playerTotalPages}
+                </span>
+                <button
+                  onClick={() =>
+                    setPlayerPage((p) => Math.min(playerTotalPages, p + 1))
+                  }
+                  disabled={safePlayerPage === playerTotalPages}
+                  className="px-2 py-1 rounded bg-slate-800 disabled:opacity-40"
+                >
+                  Next
+                </button>
+              </div>
+            </div>
+          )}
         </section>
 
-        {/* LFP column */}
         <section className="flex-1 bg-slate-900/80 border border-slate-800 rounded-xl p-4 space-y-4">
           <div className="flex items-center justify-between gap-4">
             <div>
@@ -434,7 +503,7 @@ export default function LfgClient({
                 No teams currently looking for players.
               </p>
             )}
-            {filteredLfpTeams.map((t) => {
+            {paginatedLfpTeams.map((t) => {
               const isViewerOnTeam =
                 !!viewerId &&
                 t.memberships.some((m) => m.userId === viewerId);
@@ -496,10 +565,40 @@ export default function LfgClient({
               );
             })}
           </div>
+          {filteredLfpTeams.length > TEAM_PAGE_SIZE && (
+            <div className="flex items-center justify-between pt-2 text-xs text-slate-400">
+              <span>
+                Showing{" "}
+                {(safeTeamPage - 1) * TEAM_PAGE_SIZE + 1}–
+                {Math.min(safeTeamPage * TEAM_PAGE_SIZE, filteredLfpTeams.length)}{" "}
+                of {filteredLfpTeams.length}
+              </span>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setTeamPage((p) => Math.max(1, p - 1))}
+                  disabled={safeTeamPage === 1}
+                  className="px-2 py-1 rounded bg-slate-800 disabled:opacity-40"
+                >
+                  Previous
+                </button>
+                <span>
+                  Page {safeTeamPage} of {teamTotalPages}
+                </span>
+                <button
+                  onClick={() =>
+                    setTeamPage((p) => Math.min(teamTotalPages, p + 1))
+                  }
+                  disabled={safeTeamPage === teamTotalPages}
+                  className="px-2 py-1 rounded bg-slate-800 disabled:opacity-40"
+                >
+                  Next
+                </button>
+              </div>
+            </div>
+          )}
         </section>
       </div>
 
-      {/* Manage Recruiting Modal */}
       {showTeamModal && (
         <div
           className="fixed inset-0 z-40 flex items-center justify-center bg-black/60"
