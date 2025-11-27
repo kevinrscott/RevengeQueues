@@ -5,6 +5,7 @@ import authOptions from "@/auth.config";
 import { redirect } from "next/navigation";
 
 export default async function LfgPage() {
+
   const session = await getServerSession(authOptions);
   if (!session?.user || !(session.user as any).id) {
     redirect("/login");
@@ -17,16 +18,38 @@ export default async function LfgPage() {
 
   const user = await prisma.user.findUnique({
     where: { id: userId },
-    include: {
+    select: {
+      id: true,
+      username: true,
+      region: true,
       profiles: {
-        include: {
-          game: true,
-          rank: true,
+        select: {
+          id: true,
+          ingameName: true,
+          wins: true,
+          losses: true,
+          lookingForTeam: true,
+          game: {
+            select: {
+              id: true,
+              name: true,
+              shortCode: true,
+            },
+          },
+          rank: {
+            select: {
+              id: true,
+              name: true,
+              order: true,
+              gameId: true,
+            },
+          },
         },
         orderBy: { id: "asc" },
       },
     },
   });
+
 
   if (!user || user.profiles.length === 0) {
     redirect("/profile");
@@ -39,31 +62,88 @@ export default async function LfgPage() {
     where: { userId },
   });
 
+
   const [ranks, lftProfiles, lfpTeams, manageableTeams] = await Promise.all([
     prisma.gameRank.findMany({
       where: { gameId: currentGame.id },
       orderBy: { order: "asc" },
+      select: {
+        id: true,
+        name: true,
+        order: true,
+        gameId: true,
+      },
     }),
+
     prisma.userGameProfile.findMany({
       where: {
         gameId: currentGame.id,
         lookingForTeam: true,
       },
-      include: { user: true, game: true, rank: true },
+      select: {
+        id: true,
+        ingameName: true,
+        wins: true,
+        losses: true,
+        lookingForTeam: true,
+        game: {
+          select: {
+            id: true,
+            name: true,
+            shortCode: true,
+          },
+        },
+        rank: {
+          select: {
+            id: true,
+            name: true,
+            order: true,
+            gameId: true,
+          },
+        },
+        user: {
+          select: {
+            id: true,
+            username: true,
+            region: true,
+          },
+        },
+      },
     }),
+
     prisma.team.findMany({
       where: {
         gameId: currentGame.id,
         isRecruiting: true,
       },
-      include: {
-        game: true,
-        rank: true,
+      select: {
+        id: true,
+        name: true,
+        isRecruiting: true,
+        game: {
+          select: {
+            id: true,
+            name: true,
+            shortCode: true,
+          },
+        },
+        rank: {
+          select: {
+            id: true,
+            name: true,
+            order: true,
+            gameId: true,
+          },
+        },
         memberships: {
-          include: { user: true },
+          select: {
+            userId: true,
+            role: true,
+          },
         },
       },
     }),
+
     prisma.team.findMany({
       where: {
         gameId: currentGame.id,
@@ -77,26 +157,42 @@ export default async function LfgPage() {
           },
         },
       },
-      include: {
-        game: true,
-        rank: true,
+      select: {
+        id: true,
+        name: true,
+        isRecruiting: true,
+        game: {
+          select: {
+            id: true,
+            name: true,
+            shortCode: true,
+          },
+        },
+        rank: {
+          select: {
+            id: true,
+            name: true,
+            order: true,
+            gameId: true,
+          },
+        },
         memberships: {
-          include: { user: true },
+          select: {
+            userId: true,
+            role: true,
+          },
         },
       },
     }),
   ]);
 
+  
   return (
     <main className="min-h-screen bg-gradient-to-r from-slate-900 to-slate-800 text-white p-6">
       <div className="mx-auto space-y-6">
         <h1 className="text-3xl font-bold">Find Teams &amp; Players</h1>
         <LfgClient
-          currentGame={{
-            id: currentGame.id,
-            name: currentGame.name,
-            shortCode: currentGame.shortCode,
-          }}
+          currentGame={currentGame}
           ranks={ranks}
           initialLftProfiles={lftProfiles}
           initialLfpTeams={lfpTeams}

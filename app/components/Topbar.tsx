@@ -71,7 +71,6 @@ export default function Topbar() {
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
 
-  // 🔹 NEW: track team count
   const [teamCount, setTeamCount] = useState(0);
   const MAX_TEAMS = 3;
   const hasReachedTeamLimit = teamCount >= MAX_TEAMS;
@@ -83,7 +82,6 @@ export default function Topbar() {
   const userMenuRef = useRef<HTMLDivElement>(null);
   const notifRef = useRef<HTMLDivElement>(null);
 
-  // Close search when clicking outside
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
       if (
@@ -97,7 +95,6 @@ export default function Topbar() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // Close user menu when clicking outside
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
       if (
@@ -111,7 +108,6 @@ export default function Topbar() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // Close notifications dropdown when clicking outside
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
       if (
@@ -125,7 +121,6 @@ export default function Topbar() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // Search effect
   useEffect(() => {
     const trimmed = searchTerm.trim();
 
@@ -179,7 +174,6 @@ export default function Topbar() {
     setSearchOpen(false);
   }
 
-  // Fetch notifications when session is available
   useEffect(() => {
     if (!session?.user) return;
 
@@ -196,7 +190,7 @@ export default function Topbar() {
 
         setNotifications(data.notifications as NotificationItem[]);
         setUnreadCount(data.unreadCount as number);
-        setTeamCount((data.teamCount as number) ?? 0); // 🔹 NEW
+        setTeamCount((data.teamCount as number) ?? 0);
       } catch (err) {
         console.error("Notifications error:", err);
       } finally {
@@ -231,7 +225,6 @@ export default function Topbar() {
       setNotifications((prev) => prev.filter((n) => n.id !== notificationId));
       setUnreadCount((prev) => Math.max(0, prev - 1));
 
-      // Optional: if backend adds them to a team on accept, you could bump teamCount here
       if (action === "accept") {
         setTeamCount((prev) => prev + 1);
       }
@@ -378,8 +371,11 @@ export default function Topbar() {
                 <div className="max-h-80 overflow-y-auto py-1">
                   {notifications.map((n) => {
                     const isUnread = !n.readAt;
-                    const isActionable =
-                      n.type === "TEAM_INVITE" || n.type === "TEAM_JOIN_REQUEST";
+                    const isInvite = n.type === "TEAM_INVITE";
+                    const isJoinRequest = n.type === "TEAM_JOIN_REQUEST";
+                    const isActionable = isInvite || isJoinRequest;
+
+                    const disableAccept = isInvite && hasReachedTeamLimit;
 
                     const teamLink = n.teamSlug
                       ? `/teams/${n.teamSlug}`
@@ -408,54 +404,64 @@ export default function Topbar() {
                                 </span>
                               </div>
                             )}
-                            {teamLink && (
-                              <div className="mt-1">
-                                <Link
-                                  href={teamLink}
-                                  className="text-[11px] text-cyan-400 hover:underline"
-                                >
-                                  View team
-                                </Link>
-                              </div>
-                            )}
+                            {n.type === "TEAM_JOIN_REQUEST" && n.requestUserName && (
+                            <div className="mt-1">
+                              <Link
+                                href={`/profile/${n.requestUserName}`}
+                                className="text-[11px] text-cyan-400 hover:underline"
+                              >
+                                View user
+                              </Link>
+                            </div>
+                          )}
+
+                          {n.type !== "TEAM_JOIN_REQUEST" && teamLink && (
+                            <div className="mt-1">
+                              <Link
+                                href={teamLink}
+                                className="text-[11px] text-cyan-400 hover:underline"
+                              >
+                                View team
+                              </Link>
+                            </div>
+                          )}
                           </div>
                         </div>
 
                         {isActionable && (
-                          <div className="mt-2 flex gap-2">
-                            {/* Accept with tooltip when at team limit */}
-                            <div className="relative flex-1 group">
-                              <button
-                                onClick={() =>
-                                  handleNotificationAction(n.id, "accept")
-                                }
-                                disabled={hasReachedTeamLimit}
-                                className={`w-full rounded-md px-2 py-1 text-[11px] font-semibold text-white
-                                  ${
-                                    hasReachedTeamLimit
-                                      ? "bg-emerald-700 opacity-70 cursor-not-allowed"
-                                      : "bg-emerald-600 hover:bg-emerald-500"
-                                  }`}
-                              >
-                                Accept
-                              </button>
-                              {hasReachedTeamLimit && (
-                                <div className="pointer-events-none absolute top-[110%] left-0 z-10 whitespace-nowrap rounded bg-slate-900 px-2 py-1 text-[10px] text-slate-100 opacity-0 shadow-lg transition-opacity duration-150 group-hover:opacity-100">
-                                  Already in 3 teams (limit). Leave a team to accept.
-                                </div>
-                              )}
-                            </div>
-
+                        <div className="mt-2 flex gap-2">
+                          <div className="relative flex-1 group">
                             <button
                               onClick={() =>
-                                handleNotificationAction(n.id, "reject")
+                                handleNotificationAction(n.id, "accept")
                               }
-                              className="flex-1 rounded-md bg-red-600 px-2 py-1 text-[11px] font-semibold text-white hover:bg-red-500"
+                              disabled={disableAccept}
+                              className={`w-full rounded-md px-2 py-1 text-[11px] font-semibold text-white
+                                ${
+                                  disableAccept
+                                    ? "bg-emerald-700 opacity-70 cursor-not-allowed"
+                                    : "bg-emerald-600 hover:bg-emerald-500"
+                                }`}
                             >
-                              Deny
+                              Accept
                             </button>
+                            {disableAccept && (
+                              <div className="pointer-events-none absolute top-[110%] left-0 z-10 whitespace-nowrap rounded bg-slate-900 px-2 py-1 text-[10px] text-slate-100 opacity-0 shadow-lg transition-opacity duration-150 group-hover:opacity-100">
+                                Already in 3 teams (limit). Leave a team to accept.
+                              </div>
+                            )}
                           </div>
-                        )}
+
+                          <button
+                            onClick={() =>
+                              handleNotificationAction(n.id, "reject")
+                            }
+                            className="flex-1 rounded-md bg-red-600 px-2 py-1 text-[11px] font-semibold text-white hover:bg-red-500"
+                          >
+                            Deny
+                          </button>
+                        </div>
+                      )}
                       </div>
                     );
                   })}
@@ -465,7 +471,6 @@ export default function Topbar() {
           </div>
         )}
 
-        {/* User menu */}
         <div ref={userMenuRef} className="relative flex-shrink-0">
           {session?.user?.name ? (
             <>

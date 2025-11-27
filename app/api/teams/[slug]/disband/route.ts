@@ -52,13 +52,36 @@ export async function POST(req: Request, { params }: RouteContext) {
     }
   }
 
-  await prisma.teamMembership.deleteMany({
-    where: { teamId: team.id },
-  });
+  try {
+    await prisma.$transaction(async (tx) => {
+      await tx.notification.deleteMany({
+        where: {
+          OR: [
+            { teamId: team.id },
+            { teamRequest: { teamId: team.id } },
+          ],
+        },
+      });
 
-  await prisma.team.delete({
-    where: { id: team.id },
-  });
+      await tx.teamRequest.deleteMany({
+        where: { teamId: team.id },
+      });
 
-  return NextResponse.json({ ok: true });
+      await tx.teamMembership.deleteMany({
+        where: { teamId: team.id },
+      });
+
+      await tx.team.delete({
+        where: { id: team.id },
+      });
+    });
+
+    return NextResponse.json({ ok: true });
+  } catch (err) {
+    console.error("Disband team error:", err);
+    return NextResponse.json(
+      { error: "Failed to disband team" },
+      { status: 500 }
+    );
+  }
 }

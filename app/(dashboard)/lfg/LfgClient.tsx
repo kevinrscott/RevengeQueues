@@ -22,7 +22,7 @@ type Team = {
   logoUrl: string | null;
   game: Game;
   rank: Rank | null;
-  memberships: { user: { id: number; username: string }; role: string }[];
+  memberships: { userId: number; role: string }[];
 };
 
 export default function LfgClient({
@@ -57,7 +57,6 @@ export default function LfgClient({
 
   const [showTeamModal, setShowTeamModal] = useState(false);
 
-  // Invite UI state
   const [inviteLoadingFor, setInviteLoadingFor] = useState<number | null>(null);
   const [inviteError, setInviteError] = useState<string | null>(null);
   const [inviteSuccess, setInviteSuccess] = useState<string | null>(null);
@@ -66,16 +65,20 @@ export default function LfgClient({
   const [inviteTargetUserId, setInviteTargetUserId] = useState<number | null>(null);
   const [selectedTeamId, setSelectedTeamId] = useState<number | null>(null);
 
+  const [joinLoadingFor, setJoinLoadingFor] = useState<number | null>(null);
+  const [joinError, setJoinError] = useState<string | null>(null);
+  const [joinSuccess, setJoinSuccess] = useState<string | null>(null);
+
   const manageableMyTeams =
-    viewerId == null
-      ? []
-      : myTeams.filter((t) =>
-          t.memberships.some(
-            (m) =>
-              m.user.id === viewerId &&
-              ["owner", "manager"].includes(m.role.toLowerCase())
-          )
-        );
+  viewerId == null
+    ? []
+    : myTeams.filter((t) =>
+        t.memberships.some(
+          (m) =>
+            m.userId === viewerId &&
+            ["owner", "manager"].includes(m.role.toLowerCase())
+        )
+      );
 
   const MAX_TEAMS = 3;
   const hasReachedTeamLimit = viewerTeamsCount >= MAX_TEAMS;
@@ -123,6 +126,44 @@ export default function LfgClient({
       setInviteError("Unexpected error sending invite.");
     } finally {
       setInviteLoadingFor(null);
+    }
+  }
+
+  async function requestToJoin(teamId: number) {
+    setJoinError(null);
+    setJoinSuccess(null);
+    setJoinLoadingFor(teamId);
+
+    try {
+      if (!viewerId) {
+        setJoinError("You must be logged in to request to join a team.");
+        return;
+      }
+
+      if (hasReachedTeamLimit) {
+        setJoinError("You are already in the maximum number of teams (3).");
+        return;
+      }
+
+      const res = await fetch("/api/team-requests/join", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ teamId }),
+      });
+
+      const data = await res.json().catch(() => ({}));
+
+      if (!res.ok) {
+        setJoinError(data.error || "Failed to send join request.");
+        return;
+      }
+
+      setJoinSuccess("Join request sent to the team’s owners and managers.");
+    } catch (err) {
+      console.error(err);
+      setJoinError("Unexpected error sending join request.");
+    } finally {
+      setJoinLoadingFor(null);
     }
   }
 
@@ -212,6 +253,7 @@ export default function LfgClient({
       console.error(err);
     }
   }
+  
 
   return (
     <div className="space-y-8">
@@ -254,7 +296,6 @@ export default function LfgClient({
         </div>
       </section>
 
-      {/* Invite status banner */}
       {(inviteError || inviteSuccess) && (
         <div
           className={`rounded-lg border px-4 py-3 text-sm flex items-start gap-3 ${
@@ -272,8 +313,24 @@ export default function LfgClient({
         </div>
       )}
 
+      {(joinError || joinSuccess) && (
+        <div
+          className={`rounded-lg border px-4 py-3 text-sm flex items-start gap-3 ${
+            joinError
+              ? "border-red-500 bg-red-950/80 text-red-100"
+              : "border-emerald-500 bg-emerald-950/80 text-emerald-100"
+          }`}
+        >
+          <div className="mt-0.5 text-xs font-semibold uppercase tracking-wide">
+            {joinError ? "Join Request Failed" : "Join Request Sent"}
+          </div>
+          <p className="text-xs sm:text-sm">
+            {joinError || joinSuccess}
+          </p>
+        </div>
+      )}
+
       <div className="flex flex-col lg:flex-row gap-6 items-start">
-        {/* LFT column */}
         <section className="flex-1 bg-slate-900/80 border border-slate-800 rounded-xl p-4 space-y-4">
           <div className="flex items-center justify-between gap-4">
             <h2 className="text-xl font-semibold">Looking for Team</h2>
@@ -378,13 +435,20 @@ export default function LfgClient({
               </p>
             )}
             {filteredLfpTeams.map((t) => {
+              const isViewerOnTeam =
+                !!viewerId &&
+                t.memberships.some((m) => m.userId === viewerId);
+
               const canManage =
                 !!viewerId &&
                 t.memberships.some(
                   (m) =>
-                    m.user.id === viewerId &&
+                    m.userId === viewerId &&
                     ["owner", "manager"].includes(m.role.toLowerCase())
                 );
+
+              const canRequestJoin =
+                !!viewerId && !isViewerOnTeam && !hasReachedTeamLimit;
 
               return (
                 <div
@@ -397,18 +461,37 @@ export default function LfgClient({
                       {t.rank ? t.rank.name : "Any rank"} ·{" "}
                       {t.memberships.length} players
                     </div>
+                    {hasReachedTeamLimit && !isViewerOnTeam && (
+                      <div className="mt-1 text-[10px] text-red-300">
+                        You&apos;re already in 3 teams (limit reached).
+                      </div>
+                    )}
                   </div>
 
-                  {canManage && (
-                    <button
-                      onClick={() =>
-                        toggleLookingForPlayers(t.id, !t.isRecruiting)
-                      }
-                      className="text-xs px-3 py-1 rounded-full bg-amber-600 hover:bg-amber-500"
-                    >
-                      {t.isRecruiting ? "Close Recruiting" : "Look for Players"}
-                    </button>
-                  )}
+                  <div className="flex items-center gap-2">
+                    {canRequestJoin && (
+                      <button
+                        onClick={() => requestToJoin(t.id)}
+                        disabled={joinLoadingFor === t.id}
+                        className="text-xs px-3 py-1 rounded-full bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 whitespace-nowrap"
+                      >
+                        {joinLoadingFor === t.id
+                          ? "Requesting..."
+                          : "Request to Join"}
+                      </button>
+                    )}
+
+                    {canManage && (
+                      <button
+                        onClick={() =>
+                          toggleLookingForPlayers(t.id, !t.isRecruiting)
+                        }
+                        className="text-xs px-3 py-1 rounded-full bg-amber-600 hover:bg-amber-500 whitespace-nowrap"
+                      >
+                        {t.isRecruiting ? "Close Recruiting" : "Look for Players"}
+                      </button>
+                    )}
+                  </div>
                 </div>
               );
             })}
