@@ -64,127 +64,129 @@ export default async function LfgPage() {
 
 
   const [ranks, lftProfiles, lfpTeams, manageableTeams] = await Promise.all([
-    prisma.gameRank.findMany({
-      where: { gameId: currentGame.id },
-      orderBy: { order: "asc" },
-      select: {
-        id: true,
-        name: true,
-        order: true,
-        gameId: true,
-      },
-    }),
+  prisma.gameRank.findMany({
+    where: { gameId: currentGame.id },
+    orderBy: { order: "asc" },
+    select: {
+      id: true,
+      name: true,
+      order: true,
+      gameId: true,
+    },
+  }),
 
-    prisma.userGameProfile.findMany({
-      where: {
-        gameId: currentGame.id,
-        lookingForTeam: true,
-      },
-      select: {
-        id: true,
-        ingameName: true,
-        wins: true,
-        losses: true,
-        lookingForTeam: true,
-        game: {
-          select: {
-            id: true,
-            name: true,
-            shortCode: true,
-          },
-        },
-        rank: {
-          select: {
-            id: true,
-            name: true,
-            order: true,
-            gameId: true,
-          },
-        },
-        user: {
-          select: {
-            id: true,
-            username: true,
-            region: true,
-          },
+  prisma.userGameProfile.findMany({
+    where: {
+      gameId: currentGame.id,
+      lookingForTeam: true,
+    },
+    select: {
+      id: true,
+      ingameName: true,
+      wins: true,
+      losses: true,
+      lookingForTeam: true,
+      game: {
+        select: {
+          id: true,
+          name: true,
+          shortCode: true,
         },
       },
-    }),
+      rank: {
+        select: {
+          id: true,
+          name: true,
+          order: true,
+          gameId: true,
+        },
+      },
+      user: {
+        select: {
+          id: true,
+          username: true,
+          region: true,
+        },
+      },
+    },
+  }),
 
-    prisma.team.findMany({
-      where: {
-        gameId: currentGame.id,
-        isRecruiting: true,
-      },
-      select: {
-        id: true,
-        name: true,
-        isRecruiting: true,
-        game: {
-          select: {
-            id: true,
-            name: true,
-            shortCode: true,
-          },
-        },
-        rank: {
-          select: {
-            id: true,
-            name: true,
-            order: true,
-            gameId: true,
-          },
-        },
-        memberships: {
-          select: {
-            userId: true,
-            role: true,
-          },
+  prisma.team.findMany({
+    where: {
+      gameId: currentGame.id,
+      isRecruiting: true,
+    },
+    select: {
+      id: true,
+      name: true,
+      isRecruiting: true,
+      logoUrl: true,
+      game: {
+        select: {
+          id: true,
+          name: true,
+          shortCode: true,
         },
       },
-    }),
+      rank: {
+        select: {
+          id: true,
+          name: true,
+          order: true,
+          gameId: true,
+        },
+      },
+      memberships: {
+        select: {
+          userId: true,
+          role: true,
+        },
+      },
+    },
+  }),
 
-    prisma.team.findMany({
-      where: {
-        gameId: currentGame.id,
-        memberships: {
-          some: {
-            userId,
-            role: {
-              in: ["owner", "manager"],
-              mode: "insensitive",
-            },
+  prisma.team.findMany({
+    where: {
+      gameId: currentGame.id,
+      memberships: {
+        some: {
+          userId,
+          role: {
+            in: ["owner", "manager"],
+            mode: "insensitive",
           },
         },
       },
-      select: {
-        id: true,
-        name: true,
-        isRecruiting: true,
-        game: {
-          select: {
-            id: true,
-            name: true,
-            shortCode: true,
-          },
-        },
-        rank: {
-          select: {
-            id: true,
-            name: true,
-            order: true,
-            gameId: true,
-          },
-        },
-        memberships: {
-          select: {
-            userId: true,
-            role: true,
-          },
+    },
+    select: {
+      id: true,
+      name: true,
+      isRecruiting: true,
+      logoUrl: true,
+      game: {
+        select: {
+          id: true,
+          name: true,
+          shortCode: true,
         },
       },
-    }),
-  ]);
+      rank: {
+        select: {
+          id: true,
+          name: true,
+          order: true,
+          gameId: true,
+        },
+      },
+      memberships: {
+        select: {
+          userId: true,
+          role: true,
+        },
+      },
+    },
+  }),
+]);
 
   
   return (
