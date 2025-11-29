@@ -16,7 +16,7 @@ type Props = {
   initialRankId: number | null;
   profileId: number | null;
   ranks: RankOption[];
-  initialIsPrivate: boolean;
+  initialIsPrivate?: boolean;
 };
 
 export default function EditProfileForm({
