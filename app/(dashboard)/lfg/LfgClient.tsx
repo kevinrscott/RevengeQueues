@@ -76,15 +76,15 @@ export default function LfgClient({
   const TEAM_PAGE_SIZE = 10;
 
   const manageableMyTeams =
-  viewerId == null
-    ? []
-    : myTeams.filter((t) =>
-        t.memberships.some(
-          (m) =>
-            m.userId === viewerId &&
-            ["owner", "manager"].includes(m.role.toLowerCase())
-        )
-      );
+    viewerId == null
+      ? []
+      : myTeams.filter((t) =>
+          t.memberships.some(
+            (m) =>
+              m.userId === viewerId &&
+              ["owner", "manager"].includes(m.role.toLowerCase())
+          )
+        );
 
   const MAX_TEAMS = 3;
   const hasReachedTeamLimit = viewerTeamsCount >= MAX_TEAMS;
@@ -281,324 +281,370 @@ export default function LfgClient({
       console.error(err);
     }
   }
-  
 
   return (
-    <div className="space-y-8">
-      <section className="bg-slate-900/70 border border-slate-800 rounded-xl p-4 flex flex-wrap gap-4 items-center">
-        <div>
-          <label className="block text-xs uppercase tracking-wide text-slate-400">
-            Player Rank
-          </label>
-          <select
-            value={playerRankFilter}
-            onChange={(e) => {
-              setPlayerRankFilter(e.target.value);
-              setPlayerPage(1);
-            }}
-            className="mt-1 rounded-md bg-slate-800 border border-slate-700 px-3 py-2 text-sm"
-          >
-            <option value="">Any</option>
-            {ranks.map((r) => (
-              <option key={r.id} value={r.id}>
-                {r.name}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        <div>
-          <label className="block text-xs uppercase tracking-wide text-slate-400">
-            Team Rank
-          </label>
-          <select
-            value={teamRankFilter}
-            onChange={(e) => {
-              setTeamRankFilter(e.target.value);
-              setTeamPage(1);
-            }}
-            className="mt-1 rounded-md bg-slate-800 border border-slate-700 px-3 py-2 text-sm"
-          >
-            <option value="">Any</option>
-            {ranks.map((r) => (
-              <option key={r.id} value={r.id}>
-                {r.name}
-              </option>
-            ))}
-          </select>
-        </div>
-      </section>
-
-      {(inviteError || inviteSuccess) && (
-        <div
-          className={`rounded-lg border px-4 py-3 text-sm flex items-start gap-3 ${
-            inviteError
-              ? "border-red-500 bg-red-950/80 text-red-100"
-              : "border-emerald-500 bg-emerald-950/80 text-emerald-100"
-          }`}
-        >
-          <div className="mt-0.5 text-xs font-semibold uppercase tracking-wide">
-            {inviteError ? "Invite Failed" : "Invite Sent"}
+    <>
+      {/* Outer card */}
+      <div className="rounded-2xl border border-slate-800/80 bg-slate-900/80 p-6 shadow-xl shadow-black/40 backdrop-blur space-y-6">
+        {/* Header + filters */}
+        <div className="flex flex-col gap-4 border-b border-slate-800 pb-4 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h2 className="text-xl font-semibold text-slate-100">
+              {currentGame.name} — LFG &amp; LFP
+            </h2>
+            <p className="mt-1 text-xs text-slate-400">
+              Browse players looking for teams and teams recruiting for{" "}
+              <span className="font-medium text-slate-200">
+                {currentGame.shortCode}
+              </span>
+              .
+            </p>
+            <p className="mt-1 text-[11px] text-slate-500">
+              You are currently on{" "}
+              <span className="font-medium text-slate-200">
+                {viewerTeamsCount}
+              </span>{" "}
+              team{viewerTeamsCount === 1 ? "" : "s"} (max 3).
+            </p>
           </div>
-          <p className="text-xs sm:text-sm">
-            {inviteError || inviteSuccess}
-          </p>
-        </div>
-      )}
 
-      {(joinError || joinSuccess) && (
-        <div
-          className={`rounded-lg border px-4 py-3 text-sm flex items-start gap-3 ${
-            joinError
-              ? "border-red-500 bg-red-950/80 text-red-100"
-              : "border-emerald-500 bg-emerald-950/80 text-emerald-100"
-          }`}
-        >
-          <div className="mt-0.5 text-xs font-semibold uppercase tracking-wide">
-            {joinError ? "Join Request Failed" : "Join Request Sent"}
+          <div className="flex flex-wrap items-end gap-4">
+            <div>
+              <label className="block text-[11px] uppercase tracking-wide text-slate-400">
+                Player Rank
+              </label>
+              <select
+                value={playerRankFilter}
+                onChange={(e) => {
+                  setPlayerRankFilter(e.target.value);
+                  setPlayerPage(1);
+                }}
+                className="mt-1 rounded-md bg-slate-950/60 border border-slate-700 px-3 py-2 text-xs sm:text-sm text-slate-100 focus:outline-none focus:ring-1 focus:ring-cyan-500"
+              >
+                <option value="">Any</option>
+                {ranks.map((r) => (
+                  <option key={r.id} value={r.id}>
+                    {r.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-[11px] uppercase tracking-wide text-slate-400">
+                Team Rank
+              </label>
+              <select
+                value={teamRankFilter}
+                onChange={(e) => {
+                  setTeamRankFilter(e.target.value);
+                  setTeamPage(1);
+                }}
+                className="mt-1 rounded-md bg-slate-950/60 border border-slate-700 px-3 py-2 text-xs sm:text-sm text-slate-100 focus:outline-none focus:ring-1 focus:ring-cyan-500"
+              >
+                <option value="">Any</option>
+                {ranks.map((r) => (
+                  <option key={r.id} value={r.id}>
+                    {r.name}
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
-          <p className="text-xs sm:text-sm">
-            {joinError || joinSuccess}
-          </p>
         </div>
-      )}
 
-      <div className="flex flex-col lg:flex-row gap-6 items-start">
-        <section className="flex-1 bg-slate-900/80 border border-slate-800 rounded-xl p-4 space-y-4">
-          <div className="flex items-center justify-between gap-4">
-            <h2 className="text-xl font-semibold">Looking for Team</h2>
+        {/* Alerts */}
+        {(inviteError || inviteSuccess) && (
+          <div
+            className={`rounded-lg border px-4 py-3 text-sm flex items-start gap-3 ${
+              inviteError
+                ? "border-red-500 bg-red-950/80 text-red-100"
+                : "border-emerald-500 bg-emerald-950/80 text-emerald-100"
+            }`}
+          >
+            <div className="mt-0.5 text-xs font-semibold uppercase tracking-wide">
+              {inviteError ? "Invite Failed" : "Invite Sent"}
+            </div>
+            <p className="text-xs sm:text-sm">
+              {inviteError || inviteSuccess}
+            </p>
+          </div>
+        )}
 
-            {viewerProfile && (
-              <div className="relative flex flex-col items-end gap-1 group">
-                <button
-                  onClick={() => toggleLookingForTeam(!viewerLooking)}
-                  disabled={hasReachedTeamLimit}
-                  className={`text-xs px-3 py-1 rounded-full font-medium transition
-                    ${
-                      hasReachedTeamLimit
-                        ? "bg-emerald-700 text-slate-200 opacity-70 cursor-not-allowed"
-                        : viewerLooking
-                        ? "bg-red-800 hover:bg-red-600 text-white"
-                        : "bg-emerald-600 hover:bg-emerald-500 text-white"
-                    }`}
-                >
-                  {viewerLooking ? "Stop Looking for Team" : "Start Looking for Team"}
-                </button>
+        {(joinError || joinSuccess) && (
+          <div
+            className={`rounded-lg border px-4 py-3 text-sm flex items-start gap-3 ${
+              joinError
+                ? "border-red-500 bg-red-950/80 text-red-100"
+                : "border-emerald-500 bg-emerald-950/80 text-emerald-100"
+            }`}
+          >
+            <div className="mt-0.5 text-xs font-semibold uppercase tracking-wide">
+              {joinError ? "Join Request Failed" : "Join Request Sent"}
+            </div>
+            <p className="text-xs sm:text-sm">
+              {joinError || joinSuccess}
+            </p>
+          </div>
+        )}
 
-                {hasReachedTeamLimit && (
-                  <div className="pointer-events-none absolute top-[115%] right-0 z-10 whitespace-nowrap rounded bg-slate-900 px-2 py-1 text-[10px] text-slate-100 opacity-0 shadow-lg transition-opacity duration-150 group-hover:opacity-100">
-                    Already in 3 teams (limit). Leave a team to look for a new one.
-                  </div>
-                )}
+        {/* Two-column layout */}
+        <div className="grid gap-6 lg:grid-cols-2 items-start">
+          {/* Looking for Team */}
+          <section className="space-y-4 rounded-xl border border-slate-800 bg-slate-950/40 p-4">
+            <div className="flex items-center justify-between gap-4">
+              <div>
+                <h3 className="text-lg font-semibold text-slate-100">
+                  Looking for Team
+                </h3>
+                <p className="text-xs text-slate-400">
+                  Players who are actively searching for a roster.
+                </p>
               </div>
-            )}
-          </div>
 
-          <div className="space-y-3 max-h-[70vh] overflow-y-auto pr-2">
-            {filteredLftProfiles.length === 0 && (
-              <p className="text-sm text-slate-400">
-                No players currently looking for a team.
-              </p>
-            )}
-            {paginatedLftProfiles.map((p) => {
-              const isSelf = viewerId != null && p.user.id === viewerId;
+              {viewerProfile && (
+                <div className="relative flex flex-col items-end gap-1 group">
+                  <button
+                    onClick={() => toggleLookingForTeam(!viewerLooking)}
+                    disabled={hasReachedTeamLimit}
+                    className={`text-xs px-3 py-1 rounded-full font-medium transition
+                      ${
+                        hasReachedTeamLimit
+                          ? "bg-emerald-700 text-slate-200 opacity-70 cursor-not-allowed"
+                          : viewerLooking
+                          ? "bg-red-700 hover:bg-red-600 text-white"
+                          : "bg-emerald-600 hover:bg-emerald-500 text-white"
+                      }`}
+                  >
+                    {viewerLooking ? "Stop Looking for Team" : "Start Looking for Team"}
+                  </button>
 
-              const hasInviteableTeam =
-                viewerId != null &&
-                manageableMyTeams.some(
-                  (t) => !t.memberships.some((m) => m.userId === p.user.id)
-                );
-
-              const canInvite = !isSelf && hasInviteableTeam;
-
-              return (
-                <div
-                  key={p.id}
-                  className="flex items-center justify-between bg-slate-950/50 rounded-lg px-3 py-2 border border-slate-800"
-                >
-                  <div>
-                    <div className="font-medium">
-                      {p.user.username}{" "}
-                      <span className="text-xs text-slate-400">
-                        ({p.ingameName})
-                      </span>
+                  {hasReachedTeamLimit && (
+                    <div className="pointer-events-none absolute top-[115%] right-0 z-10 whitespace-nowrap rounded bg-slate-900 px-2 py-1 text-[10px] text-slate-100 opacity-0 shadow-lg transition-opacity duration-150 group-hover:opacity-100">
+                      Already in 3 teams (limit). Leave a team to look for a new one.
                     </div>
-                    <div className="text-xs text-slate-400">
-                      {p.rank ? p.rank.name : "Unranked"} · W/L {p.wins}/{p.losses}
-                    </div>
-                  </div>
-
-                  {canInvite && (
-                    <button
-                      onClick={() => {
-                        setInviteTargetUserId(p.user.id);
-                        setSelectedTeamId(manageableMyTeams[0]?.id ?? null);
-                        setInviteModalOpen(true);
-                      }}
-                      disabled={inviteLoadingFor === p.user.id}
-                      className="text-xs px-3 py-1 rounded-full bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 whitespace-nowrap"
-                    >
-                      Invite to Team
-                    </button>
                   )}
                 </div>
-              );
-            })}
-          </div>
-          {filteredLftProfiles.length > PLAYER_PAGE_SIZE && (
-            <div className="flex items-center justify-between pt-2 text-xs text-slate-400">
-              <span>
-                Showing{" "}
-                {(safePlayerPage - 1) * PLAYER_PAGE_SIZE + 1}–
-                {Math.min(safePlayerPage * PLAYER_PAGE_SIZE, filteredLftProfiles.length)}{" "}
-                of {filteredLftProfiles.length}
-              </span>
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => setPlayerPage((p) => Math.max(1, p - 1))}
-                  disabled={safePlayerPage === 1}
-                  className="px-2 py-1 rounded bg-slate-800 disabled:opacity-40"
-                >
-                  Previous
-                </button>
-                <span>
-                  Page {safePlayerPage} of {playerTotalPages}
-                </span>
-                <button
-                  onClick={() =>
-                    setPlayerPage((p) => Math.min(playerTotalPages, p + 1))
-                  }
-                  disabled={safePlayerPage === playerTotalPages}
-                  className="px-2 py-1 rounded bg-slate-800 disabled:opacity-40"
-                >
-                  Next
-                </button>
-              </div>
-            </div>
-          )}
-        </section>
-
-        <section className="flex-1 bg-slate-900/80 border border-slate-800 rounded-xl p-4 space-y-4">
-          <div className="flex items-center justify-between gap-4">
-            <div>
-              <h2 className="text-xl font-semibold">Looking for Player</h2>
-              <p className="text-xs text-slate-400">
-                Teams marked as recruiting will appear here.
-              </p>
+              )}
             </div>
 
-            {manageableMyTeams.length > 0 && (
-              <button
-                onClick={() => setShowTeamModal(true)}
-                className="text-xs px-3 py-1 rounded-full bg-slate-700 hover:bg-slate-600"
-              >
-                Manage Recruiting
-              </button>
-            )}
-          </div>
+            <div className="space-y-3 max-h-[60vh] overflow-y-auto pr-2">
+              {filteredLftProfiles.length === 0 && (
+                <p className="text-sm text-slate-400">
+                  No players currently looking for a team.
+                </p>
+              )}
+              {paginatedLftProfiles.map((p) => {
+                const isSelf = viewerId != null && p.user.id === viewerId;
 
-          <div className="space-y-3 max-h-[70vh] overflow-y-auto pr-2">
-            {filteredLfpTeams.length === 0 && (
-              <p className="text-sm text-slate-400">
-                No teams currently looking for players.
-              </p>
-            )}
-            {paginatedLfpTeams.map((t) => {
-              const isViewerOnTeam =
-                !!viewerId &&
-                t.memberships.some((m) => m.userId === viewerId);
+                const hasInviteableTeam =
+                  viewerId != null &&
+                  manageableMyTeams.some(
+                    (t) => !t.memberships.some((m) => m.userId === p.user.id)
+                  );
 
-              const canManage =
-                !!viewerId &&
-                t.memberships.some(
-                  (m) =>
-                    m.userId === viewerId &&
-                    ["owner", "manager"].includes(m.role.toLowerCase())
-                );
+                const canInvite = !isSelf && hasInviteableTeam;
 
-              const canRequestJoin =
-                !!viewerId && !isViewerOnTeam && !hasReachedTeamLimit;
-
-              return (
-                <div
-                  key={t.id}
-                  className="flex items-center justify-between bg-slate-950/50 rounded-lg px-3 py-2 border border-slate-800"
-                >
-                  <div>
-                    <div className="font-medium">{t.name}</div>
-                    <div className="text-xs text-slate-400">
-                      {t.rank ? t.rank.name : "Any rank"} ·{" "}
-                      {t.memberships.length} players
-                    </div>
-                    {hasReachedTeamLimit && !isViewerOnTeam && (
-                      <div className="mt-1 text-[10px] text-red-300">
-                        You&apos;re already in 3 teams (limit reached).
+                return (
+                  <div
+                    key={p.id}
+                    className="flex items-center justify-between rounded-lg border border-slate-800 bg-slate-950/60 px-3 py-2"
+                  >
+                    <div>
+                      <div className="font-medium text-slate-100">
+                        {p.user.username}{" "}
+                        <span className="text-xs text-slate-400">
+                          ({p.ingameName})
+                        </span>
                       </div>
-                    )}
-                  </div>
+                      <div className="text-xs text-slate-400">
+                        {p.rank ? p.rank.name : "Unranked"} · W/L {p.wins}/{p.losses}
+                      </div>
+                    </div>
 
-                  <div className="flex items-center gap-2">
-                    {canRequestJoin && (
+                    {canInvite && (
                       <button
-                        onClick={() => requestToJoin(t.id)}
-                        disabled={joinLoadingFor === t.id}
+                        onClick={() => {
+                          setInviteTargetUserId(p.user.id);
+                          setSelectedTeamId(manageableMyTeams[0]?.id ?? null);
+                          setInviteModalOpen(true);
+                        }}
+                        disabled={inviteLoadingFor === p.user.id}
                         className="text-xs px-3 py-1 rounded-full bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 whitespace-nowrap"
                       >
-                        {joinLoadingFor === t.id
-                          ? "Requesting..."
-                          : "Request to Join"}
-                      </button>
-                    )}
-
-                    {canManage && (
-                      <button
-                        onClick={() =>
-                          toggleLookingForPlayers(t.id, !t.isRecruiting)
-                        }
-                        className="text-xs px-3 py-1 rounded-full bg-amber-600 hover:bg-amber-500 whitespace-nowrap"
-                      >
-                        {t.isRecruiting ? "Close Recruiting" : "Look for Players"}
+                        Invite to Team
                       </button>
                     )}
                   </div>
-                </div>
-              );
-            })}
-          </div>
-          {filteredLfpTeams.length > TEAM_PAGE_SIZE && (
-            <div className="flex items-center justify-between pt-2 text-xs text-slate-400">
-              <span>
-                Showing{" "}
-                {(safeTeamPage - 1) * TEAM_PAGE_SIZE + 1}–
-                {Math.min(safeTeamPage * TEAM_PAGE_SIZE, filteredLfpTeams.length)}{" "}
-                of {filteredLfpTeams.length}
-              </span>
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => setTeamPage((p) => Math.max(1, p - 1))}
-                  disabled={safeTeamPage === 1}
-                  className="px-2 py-1 rounded bg-slate-800 disabled:opacity-40"
-                >
-                  Previous
-                </button>
-                <span>
-                  Page {safeTeamPage} of {teamTotalPages}
-                </span>
-                <button
-                  onClick={() =>
-                    setTeamPage((p) => Math.min(teamTotalPages, p + 1))
-                  }
-                  disabled={safeTeamPage === teamTotalPages}
-                  className="px-2 py-1 rounded bg-slate-800 disabled:opacity-40"
-                >
-                  Next
-                </button>
-              </div>
+                );
+              })}
             </div>
-          )}
-        </section>
+
+            {filteredLftProfiles.length > PLAYER_PAGE_SIZE && (
+              <div className="flex items-center justify-between pt-2 text-[11px] text-slate-400">
+                <span>
+                  Showing{" "}
+                  {(safePlayerPage - 1) * PLAYER_PAGE_SIZE + 1}–
+                  {Math.min(
+                    safePlayerPage * PLAYER_PAGE_SIZE,
+                    filteredLftProfiles.length
+                  )}{" "}
+                  of {filteredLftProfiles.length}
+                </span>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => setPlayerPage((p) => Math.max(1, p - 1))}
+                    disabled={safePlayerPage === 1}
+                    className="px-2 py-1 rounded bg-slate-900 border border-slate-700 disabled:opacity-40"
+                  >
+                    Previous
+                  </button>
+                  <span>
+                    Page {safePlayerPage} of {playerTotalPages}
+                  </span>
+                  <button
+                    onClick={() =>
+                      setPlayerPage((p) => Math.min(playerTotalPages, p + 1))
+                    }
+                    disabled={safePlayerPage === playerTotalPages}
+                    className="px-2 py-1 rounded bg-slate-900 border border-slate-700 disabled:opacity-40"
+                  >
+                    Next
+                  </button>
+                </div>
+              </div>
+            )}
+          </section>
+
+          {/* Looking for Player */}
+          <section className="space-y-4 rounded-xl border border-slate-800 bg-slate-950/40 p-4">
+            <div className="flex items-center justify-between gap-4">
+              <div>
+                <h3 className="text-lg font-semibold text-slate-100">
+                  Looking for Player
+                </h3>
+                <p className="text-xs text-slate-400">
+                  Teams that are currently recruiting new players.
+                </p>
+              </div>
+
+              {manageableMyTeams.length > 0 && (
+                <button
+                  onClick={() => setShowTeamModal(true)}
+                  className="text-xs px-3 py-1 rounded-full bg-slate-800 hover:bg-slate-700"
+                >
+                  Manage Recruiting
+                </button>
+              )}
+            </div>
+
+            <div className="space-y-3 max-h-[60vh] overflow-y-auto pr-2">
+              {filteredLfpTeams.length === 0 && (
+                <p className="text-sm text-slate-400">
+                  No teams currently looking for players.
+                </p>
+              )}
+              {paginatedLfpTeams.map((t) => {
+                const isViewerOnTeam =
+                  !!viewerId && t.memberships.some((m) => m.userId === viewerId);
+
+                const canManage =
+                  !!viewerId &&
+                  t.memberships.some(
+                    (m) =>
+                      m.userId === viewerId &&
+                      ["owner", "manager"].includes(m.role.toLowerCase())
+                  );
+
+                const canRequestJoin =
+                  !!viewerId && !isViewerOnTeam && !hasReachedTeamLimit;
+
+                return (
+                  <div
+                    key={t.id}
+                    className="flex items-center justify-between rounded-lg border border-slate-800 bg-slate-950/60 px-3 py-2"
+                  >
+                    <div>
+                      <div className="font-medium text-slate-100">{t.name}</div>
+                      <div className="text-xs text-slate-400">
+                        {t.rank ? t.rank.name : "Any rank"} ·{" "}
+                        {t.memberships.length} players
+                      </div>
+                      {hasReachedTeamLimit && !isViewerOnTeam && (
+                        <div className="mt-1 text-[10px] text-red-300">
+                          You&apos;re already in 3 teams (limit reached).
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      {canRequestJoin && (
+                        <button
+                          onClick={() => requestToJoin(t.id)}
+                          disabled={joinLoadingFor === t.id}
+                          className="text-xs px-3 py-1 rounded-full bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 whitespace-nowrap"
+                        >
+                          {joinLoadingFor === t.id
+                            ? "Requesting..."
+                            : "Request to Join"}
+                        </button>
+                      )}
+
+                      {canManage && (
+                        <button
+                          onClick={() =>
+                            toggleLookingForPlayers(t.id, !t.isRecruiting)
+                          }
+                          className="text-xs px-3 py-1 rounded-full bg-amber-600 hover:bg-amber-500 whitespace-nowrap"
+                        >
+                          {t.isRecruiting ? "Close Recruiting" : "Look for Players"}
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {filteredLfpTeams.length > TEAM_PAGE_SIZE && (
+              <div className="flex items-center justify-between pt-2 text-[11px] text-slate-400">
+                <span>
+                  Showing{" "}
+                  {(safeTeamPage - 1) * TEAM_PAGE_SIZE + 1}–
+                  {Math.min(
+                    safeTeamPage * TEAM_PAGE_SIZE,
+                    filteredLfpTeams.length
+                  )}{" "}
+                  of {filteredLfpTeams.length}
+                </span>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => setTeamPage((p) => Math.max(1, p - 1))}
+                    disabled={safeTeamPage === 1}
+                    className="px-2 py-1 rounded bg-slate-900 border border-slate-700 disabled:opacity-40"
+                  >
+                    Previous
+                  </button>
+                  <span>
+                    Page {safeTeamPage} of {teamTotalPages}
+                  </span>
+                  <button
+                    onClick={() =>
+                      setTeamPage((p) => Math.min(teamTotalPages, p + 1))
+                    }
+                    disabled={safeTeamPage === teamTotalPages}
+                    className="px-2 py-1 rounded bg-slate-900 border border-slate-700 disabled:opacity-40"
+                  >
+                    Next
+                  </button>
+                </div>
+              </div>
+            )}
+          </section>
+        </div>
       </div>
 
+      {/* Manage Recruiting Modal */}
       {showTeamModal && (
         <div
           className="fixed inset-0 z-40 flex items-center justify-center bg-black/60"
@@ -630,7 +676,7 @@ export default function LfgClient({
                     className="flex items-center justify-between bg-slate-950/60 border border-slate-800 rounded-lg px-3 py-2"
                   >
                     <div>
-                      <div className="font-medium">{t.name}</div>
+                      <div className="font-medium text-slate-100">{t.name}</div>
                       <div className="text-xs text-slate-400">
                         {t.rank ? t.rank.name : "Any rank"} ·{" "}
                         {t.memberships.length} players
@@ -707,7 +753,7 @@ export default function LfgClient({
                       }`}
                     >
                       <div>
-                        <div className="font-medium">{t.name}</div>
+                        <div className="font-medium text-slate-100">{t.name}</div>
                         <div className="text-[11px] text-slate-400">
                           {t.rank ? t.rank.name : "Any rank"} ·{" "}
                           {t.memberships.length} players
@@ -725,8 +771,7 @@ export default function LfgClient({
 
                 <button
                   disabled={
-                    !selectedTeamId ||
-                    inviteLoadingFor === inviteTargetUserId
+                    !selectedTeamId || inviteLoadingFor === inviteTargetUserId
                   }
                   onClick={() => {
                     if (!selectedTeamId || !inviteTargetUserId) return;
@@ -743,6 +788,6 @@ export default function LfgClient({
           </div>
         </div>
       )}
-    </div>
+    </>
   );
 }

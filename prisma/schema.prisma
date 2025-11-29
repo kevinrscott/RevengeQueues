@@ -16,6 +16,16 @@ enum RegionCode {
   OC
 }
 
+enum DayOfWeek {
+  MON
+  TUE
+  WED
+  THU
+  FRI
+  SAT
+  SUN
+}
+
 // Notifications
 enum NotificationType {
   TEAM_INVITE
@@ -86,6 +96,7 @@ model UserGameProfile {
   losses     Int    @default(0)
 
   lookingForTeam Boolean @default(false)
+  isPrivate      Boolean @default(false)
 
   // FKs
   userId Int
@@ -93,9 +104,9 @@ model UserGameProfile {
   rankId Int?
 
   // Relations
-  user User      @relation(fields: [userId], references: [id])
-  game Game      @relation(fields: [gameId], references: [id])
-  rank GameRank? @relation(fields: [rankId], references: [id])
+  user         User                @relation(fields: [userId], references: [id])
+  game         Game                @relation(fields: [gameId], references: [id])
+  rank         GameRank?           @relation(fields: [rankId], references: [id])
 
   @@unique([userId, gameId], name: "user_game_unique")
   @@index([userId])

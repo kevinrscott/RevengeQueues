@@ -16,6 +16,7 @@ type Props = {
   initialRankId: number | null;
   profileId: number | null;
   ranks: RankOption[];
+  initialIsPrivate: boolean;
 };
 
 export default function EditProfileForm({
@@ -26,6 +27,7 @@ export default function EditProfileForm({
   initialRankId,
   profileId,
   ranks,
+  initialIsPrivate,
 }: Props) {
   const router = useRouter();
 
@@ -41,6 +43,7 @@ export default function EditProfileForm({
 
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const [isPrivate, setIsPrivate] = useState<boolean>(initialIsPrivate ?? false);
 
   function handleAvatarClick() {
     fileInputRef.current?.click();
@@ -97,6 +100,7 @@ export default function EditProfileForm({
           ingameName,
           rankId: rankId ? Number(rankId) : null,
           profileId,
+          isPrivate,
         }),
       });
 
@@ -211,6 +215,19 @@ export default function EditProfileForm({
             </option>
           ))}
         </select>
+      </div>
+
+      <div className="flex items-center gap-2 pt-2">
+        <input
+          type="checkbox"
+          id="privateProfile"
+          checked={isPrivate}
+          onChange={(e) => setIsPrivate(e.target.checked)}
+          className="h-4 w-4 accent-cyan-500"
+        />
+        <label htmlFor="privateProfile" className="text-sm text-slate-200">
+          Private Profile
+        </label>
       </div>
 
       <div className="flex gap-3 pt-2">

@@ -49,7 +49,7 @@ export default function DisbandTeamButton({
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="text-xs rounded-md border border-red-500 bg-red-600/90 px-3 py-1 font-semibold text-white hover:bg-red-500"
+        className="inline-flex items-center justify-center h-8 px-3 text-xs font-semibold rounded-md border border-red-500 bg-red-600 text-white hover:bg-red-500 transition"
       >
         Disband Team
       </button>

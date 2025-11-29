@@ -21,12 +21,13 @@ export async function PATCH(req: Request) {
   }
 
   const body = await req.json();
-  const { region, profilePhoto, ingameName, rankId, profileId } = body as {
+  const { region, profilePhoto, ingameName, rankId, profileId, isPrivate } = body as {
     region?: string | null;
     profilePhoto?: string;
     ingameName?: string;
     rankId?: number | null;
     profileId?: number | null;
+    isPrivate?: boolean;
   };
 
   try {
@@ -115,6 +116,10 @@ export async function PATCH(req: Request) {
 
       if (typeof ingameName !== "undefined") {
         profileUpdateData.ingameName = ingameName;
+      }
+
+      if (typeof isPrivate === "boolean") {
+        profileUpdateData.isPrivate = isPrivate;
       }
 
       if (typeof safeRankId !== "undefined") {

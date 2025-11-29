@@ -192,33 +192,43 @@ export default async function LfgPage() {
 
   
   return (
-    <main className="min-h-screen bg-gradient-to-r from-slate-900 to-slate-800 text-white p-6">
-      <div className="mx-auto space-y-6">
-        <h1 className="text-3xl font-bold">Find Teams &amp; Players</h1>
-        <LfgClient
-          currentGame={currentGame}
-          ranks={ranks}
-          initialLftProfiles={lftProfiles}
-          initialLfpTeams={lfpTeams}
-          manageableTeams={manageableTeams}
-          viewerId={userId}
-          viewerProfile={{
-            id: activeProfile.id,
-            ingameName: activeProfile.ingameName,
-            wins: activeProfile.wins,
-            losses: activeProfile.losses,
-            lookingForTeam: activeProfile.lookingForTeam,
-            game: currentGame,
-            rank: activeProfile.rank,
-            user: {
-              id: user.id,
-              username: user.username,
-              region: user.region,
-            },
-          }}
-          viewerTeamsCount={viewerTeamsCount}
-        />
+  <main className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-800 text-white">
+    <div className="mx-auto w-full max-w-6xl px-4 pb-10 pt-8 md:px-6 lg:px-8 space-y-6">
+      {/* Page header */}
+      <div className="border-b border-slate-800 pb-4">
+        <h1 className="text-2xl font-semibold text-slate-100">
+          Find Teams &amp; Players
+        </h1>
+        <p className="mt-1 text-sm text-slate-400">
+          Match with players and teams in {currentGame.name}. Filter by rank and
+          use requests &amp; invites to build your roster.
+        </p>
       </div>
-    </main>
-  );
+
+      <LfgClient
+        currentGame={currentGame}
+        ranks={ranks}
+        initialLftProfiles={lftProfiles}
+        initialLfpTeams={lfpTeams}
+        manageableTeams={manageableTeams}
+        viewerId={userId}
+        viewerProfile={{
+          id: activeProfile.id,
+          ingameName: activeProfile.ingameName,
+          wins: activeProfile.wins,
+          losses: activeProfile.losses,
+          lookingForTeam: activeProfile.lookingForTeam,
+          game: currentGame,
+          rank: activeProfile.rank,
+          user: {
+            id: user.id,
+            username: user.username,
+            region: user.region,
+          },
+        }}
+        viewerTeamsCount={viewerTeamsCount}
+      />
+    </div>
+  </main>
+);
 }

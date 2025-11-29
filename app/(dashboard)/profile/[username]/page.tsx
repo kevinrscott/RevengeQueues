@@ -46,13 +46,29 @@ export default async function ProfilePage({ params }: PageProps) {
   const activeProfile = user.profiles[0] || null;
   const isOwnProfile = viewerId !== null && viewerId === user.id;
 
-  const teamCount = await prisma.teamMembership.count({
+  // Private *for other viewers* (owner can always see everything)
+  const isProfilePrivateForViewer =
+    !!activeProfile && activeProfile.isPrivate && !isOwnProfile;
+
+  // Teams this user is in
+  const memberships = await prisma.teamMembership.findMany({
     where: { userId: user.id },
+    include: {
+      team: {
+        include: {
+          game: true,
+          rank: true,
+        },
+      },
+    },
+    orderBy: { joinedAt: "asc" },
   });
+
+  const teamCount = memberships.length;
   const maxTeamsReached = teamCount >= 3;
 
   let inviteTeams: TeamSummary[] = [];
-  if (!isOwnProfile && viewerId !== null && activeProfile) {
+  if (!isOwnProfile && viewerId !== null && activeProfile && !activeProfile.isPrivate) {
     const teams = await prisma.team.findMany({
       where: {
         gameId: activeProfile.gameId,
@@ -76,40 +92,19 @@ export default async function ProfilePage({ params }: PageProps) {
   }
 
   return (
-    <main className="min-h-screen bg-gradient-to-r from-slate-900 to-slate-800 p-6 text-white">
-      <div className="w-full max-w-xl max-h-[80vh] border-1 border-slate-800 overflow-y-auto rounded-xl bg-slate-900 p-8 shadow-2xl backdrop-blur space-y-6">
-        <div className="flex items-start justify-between gap-4">
-          <div className="flex items-center gap-4">
-            <div className="h-24 w-24 rounded-full bg-slate-800 overflow-hidden">
-              {user.profilePhoto ? (
-                <Image
-                  src={user.profilePhoto}
-                  alt={`${user.username} avatar`}
-                  width={96}
-                  height={96}
-                  className="h-full w-full object-cover"
-                />
-              ) : (
-                <div className="flex h-full w-full items-center justify-center text-xl font-semibold">
-                  {user.username[0]?.toUpperCase() ?? "?"}
-                </div>
-              )}
-            </div>
-
-            <div>
-              <h1 className="text-3xl font-bold text-slate-300">
-                {user.username}
-              </h1>
-              <span className="text-sm text-slate-400">
-                {user.region ?? "No region set"}
-              </span>
-              <span className="block text-sm text-slate-500">
-                Joined {user.createdAt.toLocaleDateString()}
-              </span>
-            </div>
+    <main className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-800 text-white">
+      <div className="mx-auto w-full max-w-6xl px-4 pb-10 pt-8 md:px-6 lg:px-8">
+        {/* Page header */}
+        <div className="mb-6 flex flex-col gap-3 border-b border-slate-800 pb-4 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h1 className="text-2xl font-semibold text-slate-100">Player Profile</h1>
+            <p className="text-sm text-slate-400">
+              View game stats, team memberships, and recruiting status.
+            </p>
           </div>
 
-          <div className="flex items-center gap-3">
+          {/* Top-level actions (only for own profile) */}
+          <div className="flex flex-wrap items-center gap-2">
             {isOwnProfile && activeProfile && (
               <LookingForTeamToggle
                 profileId={activeProfile.id}
@@ -121,66 +116,225 @@ export default async function ProfilePage({ params }: PageProps) {
             {isOwnProfile && (
               <Link
                 href="/profile/edit"
-                className="rounded-lg bg-slate-700 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-600 transition"
+                className="inline-flex items-center justify-center rounded-lg bg-slate-100 px-4 py-1.5 text-sm font-semibold text-slate-900 shadow-sm transition hover:bg-white"
               >
                 Edit Profile
               </Link>
             )}
-
-            {!isOwnProfile &&
-              viewerId !== null &&
-              activeProfile &&
-              inviteTeams.length > 0 && (
-                <InviteToTeamButton
-                  targetUserId={user.id}
-                  teams={inviteTeams}
-                  lookingForTeam={activeProfile.lookingForTeam}
-                />
-              )}
           </div>
         </div>
 
-        {activeProfile ? (
-          <div className="rounded-lg border border-slate-700 bg-slate-800 p-6 space-y-4">
-            <div className="flex items-center justify-between">
-              <h2 className="text-2xl font-semibold">
-                {activeProfile.game.name} Profile
-              </h2>
-            </div>
+        {/* Single main card */}
+        <div className="rounded-2xl border border-slate-800/80 bg-slate-900/80 p-6 shadow-xl shadow-black/40 backdrop-blur space-y-6">
+          {/* Header (always visible) */}
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+            <div className="flex items-start gap-4">
+              <div className="relative h-24 w-24 flex-shrink-0 overflow-hidden rounded-full border border-slate-700 bg-slate-900">
+                {user.profilePhoto ? (
+                  <Image
+                    src={user.profilePhoto}
+                    alt={`${user.username} avatar`}
+                    width={96}
+                    height={96}
+                    className="h-full w-full object-cover"
+                  />
+                ) : (
+                  <div className="flex h-full w-full items-center justify-center text-2xl font-semibold text-slate-300">
+                    {user.username[0]?.toUpperCase() ?? "?"}
+                  </div>
+                )}
+              </div>
 
-            <div className="flex justify-between text-base gap-6">
-              <div>
-                <p className="text-slate-400">In-game Name</p>
-                <p className="font-semibold text-lg">
-                  {activeProfile.ingameName?.trim() || "Not Set"}
+              <div className="space-y-1">
+                <div className="flex flex-wrap items-center gap-2">
+                  <h2 className="text-2xl font-bold text-slate-100">{user.username}</h2>
+                  {isOwnProfile && (
+                    <span className="rounded-full border border-emerald-500/60 bg-emerald-500/10 px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-emerald-300">
+                      You
+                    </span>
+                  )}
+                  {isProfilePrivateForViewer && (
+                    <span className="rounded-full bg-slate-800 px-3 py-1 text-xs font-medium text-slate-200">
+                      Private Profile
+                    </span>
+                  )}
+                </div>
+                <p className="text-sm text-slate-400">
+                  {user.region ?? "No region set"}
+                </p>
+                <p className="text-xs text-slate-500">
+                  Joined{" "}
+                  <span className="font-medium text-slate-300">
+                    {user.createdAt.toLocaleDateString()}
+                  </span>
                 </p>
               </div>
+            </div>
 
-              <div>
-                <p className="text-slate-400">Rank</p>
-                <p className="font-semibold text-lg">
-                  {activeProfile.rank?.name || "Unranked"}
-                </p>
-              </div>
+            {/* Per-viewer actions (invite) — only if not private to viewer */}
+            <div className="flex flex-col items-end gap-2">
+              {!isOwnProfile &&
+                !isProfilePrivateForViewer &&
+                viewerId !== null &&
+                activeProfile &&
+                !activeProfile.isPrivate &&
+                inviteTeams.length > 0 && (
+                  <InviteToTeamButton
+                    targetUserId={user.id}
+                    teams={inviteTeams}
+                    lookingForTeam={activeProfile.lookingForTeam}
+                  />
+                )}
 
-              <div>
-                <p className="text-slate-400">Wins</p>
-                <p className="font-semibold text-lg">{activeProfile.wins}</p>
-              </div>
-
-              <div>
-                <p className="text-slate-400">Losses</p>
-                <p className="font-semibold text-lg">{activeProfile.losses}</p>
-              </div>
+              {isOwnProfile && activeProfile?.isPrivate && (
+                <span className="rounded-full bg-slate-800 px-3 py-1 text-xs font-medium text-slate-200">
+                  Your profile is hidden from other players
+                </span>
+              )}
             </div>
           </div>
-        ) : (
-          <div className="rounded-lg border border-slate-700 bg-slate-900/70 p-5 text-sm text-slate-300">
-            {isOwnProfile
-              ? "You don't have a game profile yet. Once you create one, it will show up here."
-              : "This user doesn't have a game profile yet."}
+
+          {/* Body content */}
+          <div className="border-t border-slate-800/80 pt-5">
+            {isProfilePrivateForViewer ? (
+              // Private to viewer: hide *everything* except header info above
+              <div className="flex items-center gap-3 rounded-xl border border-slate-700 bg-slate-900/70 p-5 text-sm text-slate-300">
+                <span className="inline-flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full border border-slate-600 bg-slate-800 text-xs font-semibold text-slate-200">
+                  🔒
+                </span>
+                <p>
+                  This player has set their game profile, stats, and team memberships to
+                  private.
+                </p>
+              </div>
+            ) : (
+              // Not private: show game profile + teams side by side
+              <div className="grid gap-6 lg:grid-cols-[minmax(0,1.05fr)_minmax(0,1fr)]">
+                {/* Game profile side */}
+                <div>
+                  {activeProfile ? (
+                    <>
+                      <div className="mb-4 flex items-center justify-between gap-3">
+                        <div>
+                          <h3 className="text-lg font-semibold text-slate-100">
+                            {activeProfile.game.name} Profile
+                          </h3>
+                          <p className="text-xs text-slate-400">
+                            Core stats for matchmaking and team scouting.
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-4">
+                        <div className="rounded-xl border border-slate-800 bg-slate-950/40 p-4">
+                          <p className="text-xs uppercase tracking-wide text-slate-500">
+                            In-game Name
+                          </p>
+                          <p className="mt-1 break-all text-base font-semibold text-slate-100">
+                            {activeProfile.ingameName?.trim() || "Not set"}
+                          </p>
+                        </div>
+
+                        <div className="rounded-xl border border-slate-800 bg-slate-950/40 p-4">
+                          <p className="text-xs uppercase tracking-wide text-slate-500">
+                            Rank
+                          </p>
+                          <p className="mt-1 text-base font-semibold text-slate-100">
+                            {activeProfile.rank?.name || "Unranked"}
+                          </p>
+                        </div>
+
+                        <div className="rounded-xl border border-slate-800 bg-slate-950/40 p-4">
+                          <p className="text-xs uppercase tracking-wide text-slate-500">
+                            Wins
+                          </p>
+                          <p className="mt-1 text-2xl font-bold text-emerald-300">
+                            {activeProfile.wins}
+                          </p>
+                        </div>
+
+                        <div className="rounded-xl border border-slate-800 bg-slate-950/40 p-4">
+                          <p className="text-xs uppercase tracking-wide text-slate-500">
+                            Losses
+                          </p>
+                          <p className="mt-1 text-2xl font-bold text-rose-300">
+                            {activeProfile.losses}
+                          </p>
+                        </div>
+                      </div>
+                    </>
+                  ) : (
+                    <div className="rounded-xl border border-slate-800 bg-slate-950/60 p-5 text-sm text-slate-300">
+                      {isOwnProfile
+                        ? "You don't have a game profile set up yet. Create one from the dashboard to start looking for teams."
+                        : "This user doesn't have a game profile yet."}
+                    </div>
+                  )}
+                </div>
+
+                {/* Teams side (inside the same card) */}
+                <div className="rounded-xl border border-slate-800 bg-slate-950/40 p-4 h-full flex flex-col">
+                  <div className="mb-3 flex items-center justify-between gap-3">
+                    <div>
+                      <h3 className="text-lg font-semibold text-slate-100">Teams</h3>
+                      <p className="text-xs text-slate-400">
+                        Current rosters and roles for this player.
+                      </p>
+                    </div>
+                    <span className="rounded-full bg-slate-950/70 px-3 py-1 text-xs font-medium text-slate-300">
+                      {teamCount} team{teamCount === 1 ? "" : "s"}
+                    </span>
+                  </div>
+
+                  {memberships.length === 0 ? (
+                    <p className="text-sm text-slate-300">
+                      {isOwnProfile
+                        ? "You are not in any teams yet. Join or create a team to show up here."
+                        : "This player is not currently on any teams."}
+                    </p>
+                  ) : (
+                    <div className="flex flex-col gap-2 overflow-y-auto pr-1 max-h-64">
+                      {memberships.map((m) => (
+                        <Link
+                          key={m.id}
+                          href={`/teams/${m.team.slug}`}
+                          className="group flex items-center justify-between rounded-lg border border-slate-800 bg-slate-950/60 px-3 py-2.5 text-sm transition hover:border-slate-600 hover:bg-slate-900/80"
+                        >
+                          <div className="flex items-center gap-3">
+                            <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full border border-slate-700 bg-slate-900 text-[11px] font-semibold text-slate-100">
+                              {m.team.name[0]?.toUpperCase() ?? "T"}
+                            </div>
+                            <div>
+                              <div className="font-medium text-slate-100">
+                                {m.team.name}
+                              </div>
+                              <div className="mt-0.5 text-[11px] text-slate-400">
+                                {m.team.game?.name} • {m.role}
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="flex flex-col items-end gap-1 text-[11px] text-slate-400">
+                            {m.team.rank?.name && (
+                              <span className="rounded-full bg-slate-800 px-2 py-0.5 text-[10px] font-medium">
+                                {m.team.rank.name}
+                              </span>
+                            )}
+                            {m.team.isRecruiting && (
+                              <span className="rounded-full border border-emerald-500/60 bg-emerald-900/40 px-2 py-0.5 text-[10px] font-semibold text-emerald-300">
+                                Recruiting
+                              </span>
+                            )}
+                          </div>
+                        </Link>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
-        )}
+        </div>
       </div>
     </main>
   );
