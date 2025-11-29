@@ -1,4 +1,3 @@
-// app/teams/page.tsx
 import { getServerSession } from "next-auth";
 import authOptions from "@/auth.config";
 import { redirect } from "next/navigation";
@@ -33,12 +32,10 @@ export default async function TeamsPage() {
     orderBy: { id: "asc" },
   });
 
-  // ✅ No profile yet – ask them to create one first
   if (!profile) {
     return (
       <main className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-800 text-white">
-        <div className="mx-auto w-full max-w-4xl px-4 pb-10 pt-8 md:px-6 lg:px-8">
-          {/* Header */}
+        <div className="mx-auto w-full px-4 pb-10 pt-8 md:px-6 lg:px-8">
           <div className="mb-6 border-b border-slate-800 pb-4">
             <h1 className="text-2xl font-semibold text-slate-100">Teams</h1>
             <p className="mt-1 text-sm text-slate-400">
@@ -65,12 +62,10 @@ export default async function TeamsPage() {
     orderBy: { order: "asc" },
   });
 
-  // ✅ Has profile but no teams yet – show create form in a nice card
   if (memberships.length === 0) {
     return (
       <main className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-800 text-white">
         <div className="mx-auto w-full max-w-4xl px-4 pb-10 pt-8 md:px-6 lg:px-8">
-          {/* Header */}
           <div className="mb-6 border-b border-slate-800 pb-4">
             <h1 className="text-2xl font-semibold text-slate-100">Create a Team</h1>
             <p className="mt-1 text-sm text-slate-400">
@@ -86,13 +81,11 @@ export default async function TeamsPage() {
     );
   }
 
-  // ✅ Has profile and teams – list + create button
   const maxTeamsReached = memberships.length >= 3;
 
   return (
     <main className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-800 text-white">
       <div className="mx-auto w-full max-w-5xl px-4 pb-10 pt-8 md:px-6 lg:px-8">
-        {/* Page header */}
         <div className="mb-6 flex flex-col gap-3 border-b border-slate-800 pb-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h1 className="text-2xl font-semibold text-slate-100">Your Teams</h1>
@@ -121,7 +114,6 @@ export default async function TeamsPage() {
           </div>
         </div>
 
-        {/* Main card with list */}
         <div className="rounded-2xl border border-slate-800/80 bg-slate-900/80 p-6 shadow-xl shadow-black/40 backdrop-blur">
           <div className="mb-4 flex items-center justify-between">
             <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-400">

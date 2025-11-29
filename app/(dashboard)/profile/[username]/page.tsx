@@ -46,11 +46,9 @@ export default async function ProfilePage({ params }: PageProps) {
   const activeProfile = user.profiles[0] || null;
   const isOwnProfile = viewerId !== null && viewerId === user.id;
 
-  // Private *for other viewers* (owner can always see everything)
   const isProfilePrivateForViewer =
     !!activeProfile && activeProfile.isPrivate && !isOwnProfile;
 
-  // Teams this user is in
   const memberships = await prisma.teamMembership.findMany({
     where: { userId: user.id },
     include: {
@@ -93,8 +91,7 @@ export default async function ProfilePage({ params }: PageProps) {
 
   return (
     <main className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-800 text-white">
-      <div className="mx-auto w-full max-w-6xl px-4 pb-10 pt-8 md:px-6 lg:px-8">
-        {/* Page header */}
+      <div className="mx-auto w-full px-4 pb-10 pt-8 md:px-6 lg:px-8">
         <div className="mb-6 flex flex-col gap-3 border-b border-slate-800 pb-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h1 className="text-2xl font-semibold text-slate-100">Player Profile</h1>
@@ -103,7 +100,6 @@ export default async function ProfilePage({ params }: PageProps) {
             </p>
           </div>
 
-          {/* Top-level actions (only for own profile) */}
           <div className="flex flex-wrap items-center gap-2">
             {isOwnProfile && activeProfile && (
               <LookingForTeamToggle
@@ -124,9 +120,7 @@ export default async function ProfilePage({ params }: PageProps) {
           </div>
         </div>
 
-        {/* Single main card */}
         <div className="rounded-2xl border border-slate-800/80 bg-slate-900/80 p-6 shadow-xl shadow-black/40 backdrop-blur space-y-6">
-          {/* Header (always visible) */}
           <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
             <div className="flex items-start gap-4">
               <div className="relative h-24 w-24 flex-shrink-0 overflow-hidden rounded-full border border-slate-700 bg-slate-900">
@@ -171,7 +165,6 @@ export default async function ProfilePage({ params }: PageProps) {
               </div>
             </div>
 
-            {/* Per-viewer actions (invite) — only if not private to viewer */}
             <div className="flex flex-col items-end gap-2">
               {!isOwnProfile &&
                 !isProfilePrivateForViewer &&
@@ -194,10 +187,8 @@ export default async function ProfilePage({ params }: PageProps) {
             </div>
           </div>
 
-          {/* Body content */}
           <div className="border-t border-slate-800/80 pt-5">
             {isProfilePrivateForViewer ? (
-              // Private to viewer: hide *everything* except header info above
               <div className="flex items-center gap-3 rounded-xl border border-slate-700 bg-slate-900/70 p-5 text-sm text-slate-300">
                 <span className="inline-flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full border border-slate-600 bg-slate-800 text-xs font-semibold text-slate-200">
                   🔒
@@ -208,9 +199,7 @@ export default async function ProfilePage({ params }: PageProps) {
                 </p>
               </div>
             ) : (
-              // Not private: show game profile + teams side by side
               <div className="grid gap-6 lg:grid-cols-[minmax(0,1.05fr)_minmax(0,1fr)]">
-                {/* Game profile side */}
                 <div>
                   {activeProfile ? (
                     <>
@@ -272,7 +261,6 @@ export default async function ProfilePage({ params }: PageProps) {
                   )}
                 </div>
 
-                {/* Teams side (inside the same card) */}
                 <div className="rounded-xl border border-slate-800 bg-slate-950/40 p-4 h-full flex flex-col">
                   <div className="mb-3 flex items-center justify-between gap-3">
                     <div>

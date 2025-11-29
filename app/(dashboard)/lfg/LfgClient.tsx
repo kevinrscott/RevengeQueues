@@ -284,9 +284,7 @@ export default function LfgClient({
 
   return (
     <>
-      {/* Outer card */}
       <div className="rounded-2xl border border-slate-800/80 bg-slate-900/80 p-6 shadow-xl shadow-black/40 backdrop-blur space-y-6">
-        {/* Header + filters */}
         <div className="flex flex-col gap-4 border-b border-slate-800 pb-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h2 className="text-xl font-semibold text-slate-100">
@@ -353,7 +351,6 @@ export default function LfgClient({
           </div>
         </div>
 
-        {/* Alerts */}
         {(inviteError || inviteSuccess) && (
           <div
             className={`rounded-lg border px-4 py-3 text-sm flex items-start gap-3 ${
@@ -388,9 +385,7 @@ export default function LfgClient({
           </div>
         )}
 
-        {/* Two-column layout */}
         <div className="grid gap-6 lg:grid-cols-2 items-start">
-          {/* Looking for Team */}
           <section className="space-y-4 rounded-xl border border-slate-800 bg-slate-950/40 p-4">
             <div className="flex items-center justify-between gap-4">
               <div>
@@ -516,7 +511,6 @@ export default function LfgClient({
             )}
           </section>
 
-          {/* Looking for Player */}
           <section className="space-y-4 rounded-xl border border-slate-800 bg-slate-950/40 p-4">
             <div className="flex items-center justify-between gap-4">
               <div>
@@ -644,7 +638,6 @@ export default function LfgClient({
         </div>
       </div>
 
-      {/* Manage Recruiting Modal */}
       {showTeamModal && (
         <div
           className="fixed inset-0 z-40 flex items-center justify-center bg-black/60"
@@ -702,7 +695,6 @@ export default function LfgClient({
         </div>
       )}
 
-      {/* Invite Team Selection Modal */}
       {inviteModalOpen && inviteTargetUserId && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/60"

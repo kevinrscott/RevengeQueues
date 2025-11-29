@@ -193,8 +193,7 @@ export default async function LfgPage() {
   
   return (
   <main className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-800 text-white">
-    <div className="mx-auto w-full max-w-6xl px-4 pb-10 pt-8 md:px-6 lg:px-8 space-y-6">
-      {/* Page header */}
+    <div className="mx-auto w-full px-4 pb-10 pt-8 md:px-6 lg:px-8 space-y-6">
       <div className="border-b border-slate-800 pb-4">
         <h1 className="text-2xl font-semibold text-slate-100">
           Find Teams &amp; Players

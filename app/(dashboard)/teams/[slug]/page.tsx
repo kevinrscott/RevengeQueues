@@ -66,7 +66,7 @@ export default async function TeamPage({ params }: PageProps) {
 
   return (
     <main className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-800 text-white">
-      <div className="mx-auto w-full max-w-5xl px-4 pb-10 pt-8 md:px-6 lg:px-8">
+      <div className="mx-auto w-full px-4 pb-10 pt-8 md:px-6 lg:px-8">
         <div className="mb-6 flex flex-col gap-3 border-b border-slate-800 pb-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h1 className="text-2xl font-semibold text-slate-100">Team</h1>
@@ -168,10 +168,8 @@ export default async function TeamPage({ params }: PageProps) {
             </div>
           </div>
 
-          {/* Body: team info + members */}
           <div className="border-t border-slate-800/80 pt-5">
             <div className="grid gap-6 lg:grid-cols-[minmax(0,1.05fr)_minmax(0,1fr)]">
-              {/* Left: Team details / bio */}
               <div className="space-y-4">
                 <div className="rounded-xl border border-slate-800 bg-slate-950/40 p-4">
                   <h3 className="mb-2 text-sm font-semibold uppercase tracking-wide text-slate-400">
@@ -225,7 +223,6 @@ export default async function TeamPage({ params }: PageProps) {
                 </div>
               </div>
 
-              {/* Right: Members */}
               <div className="flex h-full flex-col rounded-xl border border-slate-800 bg-slate-950/40 p-4">
                 <div className="mb-3 flex items-center justify-between">
                   <div>
@@ -277,7 +274,6 @@ export default async function TeamPage({ params }: PageProps) {
                       </div>
                     )}
 
-                    {/* Other members */}
                     {otherMembers.map((m) => {
                       const memberRoleLower = (m.role || "member").toLowerCase();
                       const canManageThisMember =
