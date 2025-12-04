@@ -245,33 +245,27 @@ export default async function TeamPage({ params }: PageProps) {
                   </p>
                 ) : (
                   <div className="flex max-h-72 flex-col gap-2 overflow-y-auto pr-1">
-                    {/* Owner first */}
                     {ownerMembership && (
-                      <div className="flex items-center justify-between rounded-lg border border-slate-700 bg-slate-900 px-3 py-2">
-                        <Link
-                          href={`/profile/${ownerMembership.user.username}`}
-                          className="flex items-center gap-2 rounded-lg px-1 -mx-1 transition hover:bg-slate-800/60"
-                        >
+                      <Link
+                        href={`/profile/${ownerMembership.user.username}`}
+                        className="flex items-center justify-between rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 hover:bg-slate-800/80 transition"
+                      >
+                        <div className="flex items-center gap-2">
                           <div className="flex h-7 w-7 items-center justify-center rounded-full bg-slate-800 text-xs font-semibold">
-                            {ownerMembership.user.username[0]?.toUpperCase() ??
-                              "?"}
+                            {ownerMembership.user.username[0]?.toUpperCase() ?? "?"}
                           </div>
                           <div>
                             <div className="text-sm font-medium">
                               {ownerMembership.user.username}
                             </div>
-                            <div className="text-[10px] text-slate-400">
-                              Owner
-                            </div>
+                            <div className="text-[10px] text-slate-400">Owner</div>
                           </div>
-                        </Link>
-                        <div className="text-[10px] text-slate-400">
-                          Joined{" "}
-                          {new Date(
-                            ownerMembership.joinedAt
-                          ).toLocaleDateString()}
                         </div>
-                      </div>
+
+                        <div className="text-[10px] text-slate-400">
+                          Joined {new Date(ownerMembership.joinedAt).toLocaleDateString()}
+                        </div>
+                      </Link>
                     )}
 
                     {otherMembers.map((m) => {
@@ -279,37 +273,30 @@ export default async function TeamPage({ params }: PageProps) {
                       const canManageThisMember =
                         viewerRole &&
                         (viewerRole === "owner" ||
-                          (viewerRole === "manager" &&
-                            memberRoleLower !== "owner")) &&
+                          (viewerRole === "manager" && memberRoleLower !== "owner")) &&
                         m.userId !== userId;
 
                       return (
-                        <div
+                        <Link
                           key={m.id}
-                          className="flex items-center justify-between rounded-lg border border-slate-800 bg-slate-950 px-3 py-2"
+                          href={`/profile/${m.user.username}`}
+                          className="flex items-center justify-between rounded-lg border border-slate-800 bg-slate-950 px-3 py-2 hover:bg-slate-900 transition"
                         >
-                          <Link
-                            href={`/profile/${m.user.username}`}
-                            className="mr-2 flex items-center gap-2 rounded-lg px-1 transition hover:bg-slate-800/60"
-                          >
+                          <div className="flex items-center gap-2">
                             <div className="flex h-7 w-7 items-center justify-center rounded-full bg-slate-800 text-xs font-semibold">
                               {m.user.username[0]?.toUpperCase() ?? "?"}
                             </div>
                             <div>
-                              <div className="text-sm font-medium">
-                                {m.user.username}
-                              </div>
+                              <div className="text-sm font-medium">{m.user.username}</div>
                               <div className="text-[10px] text-slate-400">
                                 {m.role || "Member"}
                               </div>
                             </div>
-                          </Link>
+                          </div>
 
                           <div className="flex items-center gap-3 text-[10px] text-slate-400">
-                            <span>
-                              Joined{" "}
-                              {new Date(m.joinedAt).toLocaleDateString()}
-                            </span>
+                            <span>Joined {new Date(m.joinedAt).toLocaleDateString()}</span>
+
                             {canManageThisMember && (
                               <ManageMemberButton
                                 slug={team.slug}
@@ -319,7 +306,7 @@ export default async function TeamPage({ params }: PageProps) {
                               />
                             )}
                           </div>
-                        </div>
+                        </Link>
                       );
                     })}
                   </div>

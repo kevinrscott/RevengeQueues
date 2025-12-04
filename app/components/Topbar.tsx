@@ -52,6 +52,17 @@ type NotificationItem = {
   teamSlug?: string | null;
   fromUserName?: string | null;
   requestUserName?: string | null;
+
+  scrimId?: number | null;
+  scrimCode?: string | null;
+  scrimBestOf?: number | null;
+  scrimGamemode?: string | null;
+  scrimMap?: string | null;
+  scrimHostTeamName?: string | null;
+  scrimHostTeamSlug?: string | null;
+  scrimRequesterTeamName?: string | null;
+  scrimRequesterTeamSlug?: string | null;
+  scrimRequestId?: number | null;
 };
 
 export default function Topbar() {
@@ -206,14 +217,41 @@ export default function Topbar() {
   }, [session]);
 
   async function handleNotificationAction(
-    notificationId: number,
+    notification: NotificationItem,
     action: "accept" | "reject"
   ) {
     try {
+      // Scrim request from another team
+      if (notification.type === "SCRIM_REQUEST_RECEIVED") {
+        if (!notification.scrimRequestId) {
+          console.error("Missing scrimRequestId on scrim notification.");
+          return;
+        }
+
+        const res = await fetch("/api/scrim-requests/respond", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            scrimRequestId: notification.scrimRequestId,
+            action,
+          }),
+        });
+
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) {
+          console.error("Scrim action failed:", data.error || "Unknown error");
+          return;
+        }
+
+        setNotifications((prev) => prev.filter((n) => n.id !== notification.id));
+        setUnreadCount((prev) => Math.max(0, prev - 1));
+        return;
+      }
+
       const res = await fetch("/api/team-requests/respond", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ notificationId, action }),
+        body: JSON.stringify({ notificationId: notification.id, action }),
       });
 
       const data = await res.json().catch(() => ({}));
@@ -222,14 +260,32 @@ export default function Topbar() {
         return;
       }
 
-      setNotifications((prev) => prev.filter((n) => n.id !== notificationId));
+      setNotifications((prev) => prev.filter((n) => n.id !== notification.id));
       setUnreadCount((prev) => Math.max(0, prev - 1));
 
-      if (action === "accept") {
+      if (action === "accept" && notification.type === "TEAM_INVITE") {
         setTeamCount((prev) => prev + 1);
       }
     } catch (err) {
       console.error("Action error:", err);
+    }
+  }
+
+  async function dismissNotification(id: number) {
+    try {
+      const res = await fetch(`/api/notifications/${id}/read`, {
+        method: "PATCH",
+      });
+
+      if (!res.ok) {
+        console.error("Failed to dismiss notification");
+        return;
+      }
+
+      setNotifications((prev) => prev.filter((n) => n.id !== id));
+      setUnreadCount((prev) => Math.max(0, prev - 1));
+    } catch (err) {
+      console.error("Dismiss error:", err);
     }
   }
 
@@ -243,7 +299,6 @@ export default function Topbar() {
       </span>
 
       <div className="flex items-center gap-4">
-        {/* Search */}
         <div ref={searchRef} className="relative flex-1 max-w-2xl">
           <input
             type="text"
@@ -373,9 +428,16 @@ export default function Topbar() {
                     const isUnread = !n.readAt;
                     const isInvite = n.type === "TEAM_INVITE";
                     const isJoinRequest = n.type === "TEAM_JOIN_REQUEST";
-                    const isActionable = isInvite || isJoinRequest;
+                    const isScrimRequest = n.type === "SCRIM_REQUEST_RECEIVED";
 
-                    const disableAccept = isInvite && hasReachedTeamLimit;
+                    const isScrimResult =
+                      n.type === "SCRIM_REQUEST_ACCEPTED" ||
+                      n.type === "SCRIM_REQUEST_REJECTED";
+
+                    const isActionable = isInvite || isJoinRequest || isScrimRequest;
+
+                    const disableAccept =
+                      (isInvite && hasReachedTeamLimit) || false;
 
                     const teamLink = n.teamSlug
                       ? `/teams/${n.teamSlug}`
@@ -396,6 +458,7 @@ export default function Topbar() {
                             <div className="text-[11px] text-slate-400">
                               {n.body}
                             </div>
+
                             {n.fromUserName && (
                               <div className="text-[11px] text-slate-500 mt-0.5">
                                 From:{" "}
@@ -404,64 +467,71 @@ export default function Topbar() {
                                 </span>
                               </div>
                             )}
+
                             {n.type === "TEAM_JOIN_REQUEST" && n.requestUserName && (
-                            <div className="mt-1">
-                              <Link
-                                href={`/profile/${n.requestUserName}`}
-                                className="text-[11px] text-cyan-400 hover:underline"
-                              >
-                                View user
-                              </Link>
-                            </div>
-                          )}
+                              <div className="mt-1">
+                                <Link
+                                  href={`/profile/${n.requestUserName}`}
+                                  className="text-[11px] text-cyan-400 hover:underline"
+                                >
+                                  View user
+                                </Link>
+                              </div>
+                            )}
 
-                          {n.type !== "TEAM_JOIN_REQUEST" && teamLink && (
-                            <div className="mt-1">
-                              <Link
-                                href={teamLink}
-                                className="text-[11px] text-cyan-400 hover:underline"
-                              >
-                                View team
-                              </Link>
-                            </div>
-                          )}
-                          </div>
-                        </div>
-
-                        {isActionable && (
-                        <div className="mt-2 flex gap-2">
-                          <div className="relative flex-1 group">
-                            <button
-                              onClick={() =>
-                                handleNotificationAction(n.id, "accept")
-                              }
-                              disabled={disableAccept}
-                              className={`w-full rounded-md px-2 py-1 text-[11px] font-semibold text-white
-                                ${
-                                  disableAccept
-                                    ? "bg-emerald-700 opacity-70 cursor-not-allowed"
-                                    : "bg-emerald-600 hover:bg-emerald-500"
-                                }`}
-                            >
-                              Accept
-                            </button>
-                            {disableAccept && (
-                              <div className="pointer-events-none absolute top-[110%] left-0 z-10 whitespace-nowrap rounded bg-slate-900 px-2 py-1 text-[10px] text-slate-100 opacity-0 shadow-lg transition-opacity duration-150 group-hover:opacity-100">
-                                Already in 3 teams (limit). Leave a team to accept.
+                            {n.type !== "TEAM_JOIN_REQUEST" && teamLink && (
+                              <div className="mt-1">
+                                <Link
+                                  href={teamLink}
+                                  className="text-[11px] text-cyan-400 hover:underline"
+                                >
+                                  View team
+                                </Link>
                               </div>
                             )}
                           </div>
 
-                          <button
-                            onClick={() =>
-                              handleNotificationAction(n.id, "reject")
-                            }
-                            className="flex-1 rounded-md bg-red-600 px-2 py-1 text-[11px] font-semibold text-white hover:bg-red-500"
-                          >
-                            Deny
-                          </button>
+                          {isScrimResult && (
+                            <button
+                              onClick={() => dismissNotification(n.id)}
+                              className="ml-2 self-start text-[11px] text-slate-500 hover:text-slate-200 hover:bg-slate-800 rounded-full px-2 py-0.5"
+                              aria-label="Dismiss notification"
+                            >
+                              ✕
+                            </button>
+                          )}
                         </div>
-                      )}
+
+                        {isActionable && (
+                          <div className="mt-2 flex gap-2">
+                            <div className="relative flex-1 group">
+                              <button
+                                onClick={() => handleNotificationAction(n, "accept")}
+                                disabled={disableAccept}
+                                className={`w-full rounded-md px-2 py-1 text-[11px] font-semibold text-white
+                                  ${
+                                    disableAccept
+                                      ? "bg-emerald-700 opacity-70 cursor-not-allowed"
+                                      : "bg-emerald-600 hover:bg-emerald-500"
+                                  }`}
+                              >
+                                Accept
+                              </button>
+                              {disableAccept && (
+                                <div className="pointer-events-none absolute top-[110%] left-0 z-10 whitespace-nowrap rounded bg-slate-900 px-2 py-1 text-[10px] text-slate-100 opacity-0 shadow-lg transition-opacity duration-150 group-hover:opacity-100">
+                                  Already in 3 teams (limit). Leave a team to accept.
+                                </div>
+                              )}
+                            </div>
+
+                            <button
+                              onClick={() => handleNotificationAction(n, "reject")}
+                              className="flex-1 rounded-md bg-red-600 px-2 py-1 text-[11px] font-semibold text-white hover:bg-red-500"
+                            >
+                              Deny
+                            </button>
+                          </div>
+                        )}
                       </div>
                     );
                   })}

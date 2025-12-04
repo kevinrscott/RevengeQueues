@@ -57,6 +57,8 @@ model User {
   teamRequestsCreated TeamRequest[]     @relation("TeamRequestCreatedBy")
   scrimRequests       ScrimRequest[]    @relation("ScrimRequestRequestedBy")
   notifications       Notification[]
+
+  scrimsCreated Scrim[] @relation("ScrimCreatedBy")
 }
 
 model Game {
@@ -104,9 +106,9 @@ model UserGameProfile {
   rankId Int?
 
   // Relations
-  user         User                @relation(fields: [userId], references: [id])
-  game         Game                @relation(fields: [gameId], references: [id])
-  rank         GameRank?           @relation(fields: [rankId], references: [id])
+  user User      @relation(fields: [userId], references: [id])
+  game Game      @relation(fields: [gameId], references: [id])
+  rank GameRank? @relation(fields: [rankId], references: [id])
 
   @@unique([userId, gameId], name: "user_game_unique")
   @@index([userId])
@@ -188,21 +190,26 @@ model Scrim {
   bestOf      Int
   gamemode    String
   map         String
-  scrimCode   String
+  scrimCode   String?
   scheduledAt DateTime?
   status      String
   createdAt   DateTime  @default(now())
 
+  hostParticipantIds Int[] @default([])
+
   // FKs
-  hostTeamId Int
+  hostTeamId      Int
+  createdByUserId Int
 
   // Relations
   hostTeam      Team           @relation(fields: [hostTeamId], references: [id])
+  createdBy     User           @relation("ScrimCreatedBy", fields: [createdByUserId], references: [id])
   requests      ScrimRequest[]
   notifications Notification[]
 
   @@unique([scrimCode])
   @@index([hostTeamId])
+  @@index([createdByUserId])
 }
 
 model ScrimRequest {
@@ -216,6 +223,8 @@ model ScrimRequest {
   scrimId           Int
   teamId            Int
   requestedByUserId Int
+
+  participantIds Int[] @default([])
 
   // Relations
   scrim         Scrim          @relation(fields: [scrimId], references: [id])

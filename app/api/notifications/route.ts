@@ -50,14 +50,47 @@ export async function GET() {
           },
         },
       },
+      scrim: {
+        select: {
+          id: true,
+          scrimCode: true,
+          bestOf: true,
+          gamemode: true,
+          map: true,
+          hostTeam: {
+            select: {
+              id: true,
+              name: true,
+              slug: true,
+            },
+          },
+        },
+      },
+      scrimRequest: {
+        include: {
+          team: {
+            select: { id: true, name: true, slug: true },
+          },
+          requestedBy: {
+            select: { id: true, username: true },
+          },
+        },
+      },
     },
   });
 
   const items = notifications.map((n) => {
     const tr = n.teamRequest;
-    const team = n.team || tr?.team;
-    const createdBy = tr?.createdBy;
-    const requestUser = tr?.user;
+    const sr = n.scrimRequest;
+
+    const team =
+      n.team || tr?.team || sr?.team || null;
+
+    const createdBy = tr?.createdBy || sr?.requestedBy || null;
+    const requestUser = tr?.user || null;
+
+    const scrim = n.scrim;
+    const hostTeam = scrim?.hostTeam ?? null;
 
     return {
       id: n.id,
@@ -66,11 +99,23 @@ export async function GET() {
       body: n.body,
       createdAt: n.createdAt,
       readAt: n.readAt,
+
       teamName: team?.name ?? null,
       teamSlug: team?.slug ?? null,
       fromUserName: createdBy?.username ?? null,
       requestUserName: requestUser?.username ?? null,
       teamRequestId: tr?.id ?? null,
+
+      scrimId: scrim?.id ?? null,
+      scrimCode: scrim?.scrimCode ?? null,
+      scrimBestOf: scrim?.bestOf ?? null,
+      scrimGamemode: scrim?.gamemode ?? null,
+      scrimMap: scrim?.map ?? null,
+      scrimHostTeamName: hostTeam?.name ?? null,
+      scrimHostTeamSlug: hostTeam?.slug ?? null,
+      scrimRequesterTeamName: sr?.team?.name ?? null,
+      scrimRequesterTeamSlug: sr?.team?.slug ?? null,
+      scrimRequestId: sr?.id ?? null,
     };
   });
 
