@@ -26,7 +26,7 @@ type Scrim = {
   bestOf: number;
   gamemode: string;
   map: string;
-  scrimCode: string;
+  scrimCode: string | null;
   scheduledAt: string | null;
   status: string;
   hostTeam: Team;

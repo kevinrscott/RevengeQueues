@@ -197,7 +197,10 @@ export default async function ScrimsPage() {
               bestOf: s.bestOf,
               gamemode: s.gamemode,
               map: s.map,
-              scrimCode: s.scrimCode,
+              scrimCode:
+                s.scrimCode !== null && s.scrimCode !== undefined
+                  ? String(s.scrimCode)
+                  : null,
               scheduledAt: s.scheduledAt ? s.scheduledAt.toISOString() : null,
               status: s.status,
               hostTeam: {
@@ -234,6 +237,7 @@ export default async function ScrimsPage() {
               matchedParticipantIds: acceptedRequest?.participantIds ?? [],
             };
           })}
+          viewerTeamsCount={viewerTeamsCount}
 />
       </div>
     </main>
