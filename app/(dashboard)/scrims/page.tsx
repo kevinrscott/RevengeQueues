@@ -7,6 +7,8 @@ import ScrimsClient from "./ScrimsClient";
 export const preferredRegion = ["pdx1"];
 
 export default async function ScrimsPage() {
+  console.time("ScrimsPage total");
+
   const session = await getServerSession(authOptions);
   if (!session?.user || !(session.user as any).id) {
     redirect("/login");
@@ -17,6 +19,7 @@ export default async function ScrimsPage() {
     redirect("/login");
   }
 
+  console.time("viewerProfile");
   const viewerProfile = await prisma.userGameProfile.findFirst({
     where: { userId: viewerId },
     include: {
@@ -25,6 +28,7 @@ export default async function ScrimsPage() {
       user: true,
     },
   });
+  console.timeEnd("viewerProfile");
 
   if (!viewerProfile) {
     redirect("/profile");
@@ -32,40 +36,26 @@ export default async function ScrimsPage() {
 
   const currentGame = viewerProfile.game;
 
-  const viewerTeamsCount = await prisma.teamMembership.count({
-    where: { userId: viewerId },
-  });
-
-  const viewerTeams = await prisma.team.findMany({
-    where: {
-      gameId: currentGame.id,
-      memberships: {
-        some: { userId: viewerId },
-      },
-    },
-    include: {
-      rank: true,
-      memberships: {
-        include: {
-          user: {
-            select: {
-              id: true,
-              username: true,
-            },
+  // Run the rest in parallel: count, viewerTeams, scrims
+  console.time("parallel DB queries");
+  const [viewerTeamsCount, viewerTeams, scrims] = await Promise.all([
+    (async () => {
+      console.time("viewerTeamsCount");
+      const result = await prisma.teamMembership.count({
+        where: { userId: viewerId },
+      });
+      console.timeEnd("viewerTeamsCount");
+      return result;
+    })(),
+    (async () => {
+      console.time("viewerTeams");
+      const result = await prisma.team.findMany({
+        where: {
+          gameId: currentGame.id,
+          memberships: {
+            some: { userId: viewerId },
           },
         },
-      },
-    },
-  });
-
-  const scrims = await prisma.scrim.findMany({
-    where: {
-      hostTeam: {
-        gameId: currentGame.id,
-      },
-    },
-    include: {
-      hostTeam: {
         include: {
           rank: true,
           memberships: {
@@ -79,11 +69,20 @@ export default async function ScrimsPage() {
             },
           },
         },
-      },
-      requests: {
-        where: { status: "accepted" },
+      });
+      console.timeEnd("viewerTeams");
+      return result;
+    })(),
+    (async () => {
+      console.time("scrims");
+      const result = await prisma.scrim.findMany({
+        where: {
+          hostTeam: {
+            gameId: currentGame.id,
+          },
+        },
         include: {
-          team: {
+          hostTeam: {
             include: {
               rank: true,
               memberships: {
@@ -98,11 +97,38 @@ export default async function ScrimsPage() {
               },
             },
           },
+          requests: {
+            where: { status: "accepted" },
+            include: {
+              team: {
+                include: {
+                  rank: true,
+                  memberships: {
+                    include: {
+                      user: {
+                        select: {
+                          id: true,
+                          username: true,
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
         },
-      },
-    },
-    orderBy: { createdAt: "desc" },
-  });
+        orderBy: { createdAt: "desc" },
+        // limit the number of scrims returned for performance
+        take: 20,
+      });
+      console.timeEnd("scrims");
+      return result;
+    })(),
+  ]);
+  console.timeEnd("parallel DB queries");
+
+  console.timeEnd("ScrimsPage total");
 
   return (
     <main className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-800 text-white">
@@ -238,7 +264,7 @@ export default async function ScrimsPage() {
             };
           })}
           viewerTeamsCount={viewerTeamsCount}
-/>
+        />
       </div>
     </main>
   );
