@@ -7,8 +7,6 @@ import ScrimsClient from "./ScrimsClient";
 export const preferredRegion = ["pdx1"];
 
 export default async function ScrimsPage() {
-  console.time("ScrimsPage total");
-
   const session = await getServerSession(authOptions);
   if (!session?.user || !(session.user as any).id) {
     redirect("/login");
@@ -19,7 +17,6 @@ export default async function ScrimsPage() {
     redirect("/login");
   }
 
-  console.time("viewerProfile");
   const viewerProfile = await prisma.userGameProfile.findFirst({
     where: { userId: viewerId },
     include: {
@@ -28,7 +25,6 @@ export default async function ScrimsPage() {
       user: true,
     },
   });
-  console.timeEnd("viewerProfile");
 
   if (!viewerProfile) {
     redirect("/profile");
@@ -36,80 +32,116 @@ export default async function ScrimsPage() {
 
   const currentGame = viewerProfile.game;
 
-  // Run the rest in parallel: count, viewerTeams, scrims
-  console.time("parallel DB queries");
   const [viewerTeamsCount, viewerTeams, scrims] = await Promise.all([
-    (async () => {
-      console.time("viewerTeamsCount");
-      const result = await prisma.teamMembership.count({
-        where: { userId: viewerId },
-      });
-      console.timeEnd("viewerTeamsCount");
-      return result;
-    })(),
-    (async () => {
-      console.time("viewerTeams");
-      const result = await prisma.team.findMany({
-        where: {
-          gameId: currentGame.id,
-          memberships: {
-            some: { userId: viewerId },
+    prisma.teamMembership.count({
+      where: { userId: viewerId },
+    }),
+    prisma.team.findMany({
+      where: {
+        gameId: currentGame.id,
+        memberships: {
+          some: { userId: viewerId },
+        },
+      },
+      select: {
+        id: true,
+        name: true,
+        isRecruiting: true,
+        logoUrl: true,
+        rank: {
+          select: {
+            id: true,
+            name: true,
+            order: true,
+            gameId: true,
           },
         },
-        include: {
-          rank: true,
-          memberships: {
-            include: {
-              user: {
-                select: {
-                  id: true,
-                  username: true,
-                },
+        memberships: {
+          select: {
+            userId: true,
+            role: true,
+            user: {
+              select: {
+                id: true,
+                username: true,
               },
             },
           },
         },
-      });
-      console.timeEnd("viewerTeams");
-      return result;
-    })(),
-    (async () => {
-      console.time("scrims");
-      const result = await prisma.scrim.findMany({
-        where: {
-          hostTeam: {
-            gameId: currentGame.id,
-          },
+      },
+    }),
+    prisma.scrim.findMany({
+      where: {
+        hostTeam: {
+          gameId: currentGame.id,
         },
-        include: {
-          hostTeam: {
-            include: {
-              rank: true,
-              memberships: {
-                include: {
-                  user: {
-                    select: {
-                      id: true,
-                      username: true,
-                    },
+      },
+      select: {
+        id: true,
+        bestOf: true,
+        gamemode: true,
+        map: true,
+        scrimCode: true,
+        scheduledAt: true,
+        status: true,
+        createdAt: true,
+        hostParticipantIds: true,
+        hostTeam: {
+          select: {
+            id: true,
+            name: true,
+            isRecruiting: true,
+            logoUrl: true,
+            rank: {
+              select: {
+                id: true,
+                name: true,
+                order: true,
+                gameId: true,
+              },
+            },
+            memberships: {
+              select: {
+                userId: true,
+                role: true,
+                user: {
+                  select: {
+                    id: true,
+                    username: true,
                   },
                 },
               },
             },
           },
-          requests: {
-            where: { status: "accepted" },
-            include: {
-              team: {
-                include: {
-                  rank: true,
-                  memberships: {
-                    include: {
-                      user: {
-                        select: {
-                          id: true,
-                          username: true,
-                        },
+        },
+        requests: {
+          where: { status: "accepted" },
+          select: {
+            id: true,
+            teamId: true,
+            participantIds: true,
+            team: {
+              select: {
+                id: true,
+                name: true,
+                isRecruiting: true,
+                logoUrl: true,
+                rank: {
+                  select: {
+                    id: true,
+                    name: true,
+                    order: true,
+                    gameId: true,
+                  },
+                },
+                memberships: {
+                  select: {
+                    userId: true,
+                    role: true,
+                    user: {
+                      select: {
+                        id: true,
+                        username: true,
                       },
                     },
                   },
@@ -118,17 +150,13 @@ export default async function ScrimsPage() {
             },
           },
         },
-        orderBy: { createdAt: "desc" },
-        // limit the number of scrims returned for performance
-        take: 20,
-      });
-      console.timeEnd("scrims");
-      return result;
-    })(),
+      },
+      orderBy: { createdAt: "desc" },
+      take: 20,
+    }),
   ]);
-  console.timeEnd("parallel DB queries");
 
-  console.timeEnd("ScrimsPage total");
+  const viewerTeamIds = viewerTeams.map((t) => t.id);
 
   return (
     <main className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-800 text-white">
@@ -214,7 +242,6 @@ export default async function ScrimsPage() {
                 }
               : null;
 
-            const viewerTeamIds = viewerTeams.map((t) => t.id);
             const isJoined =
               !!acceptedRequest && viewerTeamIds.includes(acceptedRequest.teamId);
 
