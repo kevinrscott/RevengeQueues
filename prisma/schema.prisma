@@ -197,6 +197,10 @@ model Scrim {
 
   hostParticipantIds Int[] @default([])
 
+  teamSize Int           @default(4)
+  ruleset  String        @default("Custom")
+  region   RegionCode?
+
   // FKs
   hostTeamId      Int
   createdByUserId Int

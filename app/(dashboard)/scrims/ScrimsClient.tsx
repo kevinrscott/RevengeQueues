@@ -1,6 +1,9 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import ScheduledTimePicker from "./ScheduledTimePicker";
+
+type RegionCode = "NA" | "EU" | "SA" | "AS" | "OC";
 
 type Game = { id: number; name: string; shortCode: string };
 type Rank = { id: number; name: string; order: number; gameId: number };
@@ -34,6 +37,10 @@ type Scrim = {
   isJoined: boolean;
   hostParticipantIds?: number[];
 
+  teamSize: number;
+  ruleset: string;
+  region: RegionCode;
+
   matchedTeam?: Team | null;
   matchedParticipantIds?: number[];
 };
@@ -62,6 +69,8 @@ export default function ScrimsClient({
   const [createMap, setCreateMap] = useState("");
   const [createScheduledAt, setCreateScheduledAt] = useState<string>("");
   const [createScrimCode, setCreateScrimCode] = useState("");
+  const [createTeamSize, setCreateTeamSize] = useState(4);
+  const [createRuleset, setCreateRuleset] = useState<"CDL" | "CUSTOM">("CDL");
 
   const [createLoading, setCreateLoading] = useState(false);
   const [createError, setCreateError] = useState<string | null>(null);
@@ -89,6 +98,10 @@ export default function ScrimsClient({
   const [manageSuccess, setManageSuccess] = useState<string | null>(null);
   const [manageConfirmDisband, setManageConfirmDisband] = useState(false);
 
+  const [leaveLoadingId, setLeaveLoadingId] = useState<number | null>(null);
+  const [leaveError, setLeaveError] = useState<string | null>(null);
+  const [leaveSuccess, setLeaveSuccess] = useState<string | null>(null);
+
   const hostableTeams = useMemo(
     () =>
       viewerId == null
@@ -103,6 +116,11 @@ export default function ScrimsClient({
     [viewerId, viewerTeams]
   );
 
+  const viewerTeamIds = useMemo(
+    () => viewerTeams.map((t) => t.id),
+    [viewerTeams]
+  );
+
   const myScrims = useMemo(
     () =>
       scrims
@@ -113,6 +131,12 @@ export default function ScrimsClient({
         }),
     [scrims]
   );
+
+  function toLocalInputValue(date: Date): string {
+    const offset = date.getTimezoneOffset();
+    const local = new Date(date.getTime() - offset * 60 * 1000);
+    return local.toISOString().slice(0, 16);
+  }
 
   const openScrims = useMemo(
     () =>
@@ -130,6 +154,43 @@ export default function ScrimsClient({
       }),
     [scrims, statusFilter, bestOfFilter]
   );
+
+  function formatDateTime(iso: string | null) {
+    if (!iso) return "Time TBD";
+    const d = new Date(iso);
+    if (Number.isNaN(d.getTime())) return "Time TBD";
+    return d.toLocaleString(undefined, {
+      month: "short",
+      day: "numeric",
+      hour: "numeric",
+      minute: "2-digit",
+    });
+  }
+
+  function formatTeamSize(teamSize: number) {
+    return `${teamSize}v${teamSize}`;
+  }
+
+  function formatRuleset(ruleset: string) {
+    if (!ruleset) return "Custom";
+    const upper = ruleset.toUpperCase();
+    if (upper === "CDL") return "CDL";
+    return "Custom";
+  }
+
+  function openCreateModalWithDefaults() {
+    const defaultTeam = hostableTeams[0] ?? null;
+    setCreateHostTeamId(defaultTeam?.id ?? null);
+    setCreateSelectedMemberIds(
+      defaultTeam ? defaultTeam.memberships.map((m) => m.userId) : []
+    );
+
+    const now = new Date();
+    now.setMinutes(now.getMinutes() + 30, 0, 0);
+    setCreateScheduledAt(toLocalInputValue(now));
+
+    setCreateModalOpen(true);
+  }
 
   async function handleCreateScrim() {
     if (!viewerId) {
@@ -164,7 +225,9 @@ export default function ScrimsClient({
           map: createMap.trim(),
           scheduledAt: createScheduledAt || null,
           hostParticipantIds: createSelectedMemberIds,
-          scrimCode: createScrimCode.trim(), // NEW
+          scrimCode: createScrimCode.trim(),
+          teamSize: createTeamSize,
+          ruleset: createRuleset,
         }),
       });
 
@@ -180,7 +243,7 @@ export default function ScrimsClient({
         bestOf: data.bestOf,
         gamemode: data.gamemode,
         map: data.map,
-        scrimCode: data.scrimCode,
+        scrimCode: data.scrimCode ?? null,
         scheduledAt: data.scheduledAt ?? null,
         status: data.status,
         hostTeam: data.hostTeam,
@@ -189,6 +252,9 @@ export default function ScrimsClient({
         hostParticipantIds: data.hostParticipantIds ?? createSelectedMemberIds,
         matchedTeam: null,
         matchedParticipantIds: [],
+        teamSize: data.teamSize,
+        ruleset: data.ruleset,
+        region: data.region,
       };
 
       setScrims((prev) => [created, ...prev]);
@@ -202,8 +268,9 @@ export default function ScrimsClient({
       setCreateScheduledAt("");
       setCreateSelectedMemberIds([]);
       setCreateScrimCode("");
-    } catch (err) {
-      console.error(err);
+      setCreateTeamSize(4);
+      setCreateRuleset("CDL");
+    } catch {
       setCreateError("Unexpected error creating scrim.");
     } finally {
       setCreateLoading(false);
@@ -265,8 +332,7 @@ export default function ScrimsClient({
       setJoinTargetScrimId(null);
       setJoinTeamId(null);
       setJoinSelectedMemberIds([]);
-    } catch (err) {
-      console.error(err);
+    } catch {
       setJoinError("Unexpected error sending scrim request.");
     } finally {
       setJoinLoading(false);
@@ -310,8 +376,7 @@ export default function ScrimsClient({
       );
 
       setManageSuccess("Scrim updated.");
-    } catch (err) {
-      console.error(err);
+    } catch {
       setManageError("Unexpected error updating scrim.");
     } finally {
       setManageSaving(false);
@@ -341,24 +406,54 @@ export default function ScrimsClient({
       setManageOpen(false);
       setManageScrim(null);
       setManageConfirmDisband(false);
-    } catch (err) {
-      console.error(err);
+    } catch {
       setManageError("Unexpected error disbanding scrim.");
     } finally {
       setManageSaving(false);
     }
   }
 
-  function formatDateTime(iso: string | null) {
-    if (!iso) return "Time TBD";
-    const d = new Date(iso);
-    if (Number.isNaN(d.getTime())) return "Time TBD";
-    return d.toLocaleString(undefined, {
-      month: "short",
-      day: "numeric",
-      hour: "numeric",
-      minute: "2-digit",
-    });
+  async function handleLeaveScrim(scrimId: number) {
+    if (!viewerId) {
+      setLeaveError("You must be logged in to leave a scrim.");
+      return;
+    }
+
+    setLeaveLoadingId(scrimId);
+    setLeaveError(null);
+    setLeaveSuccess(null);
+
+    try {
+      const res = await fetch(`/api/scrims/${scrimId}/leave`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+      });
+
+      const data = await res.json().catch(() => ({}));
+
+      if (!res.ok) {
+        setLeaveError(data.error || "Failed to leave scrim.");
+        return;
+      }
+
+      setScrims((prev) =>
+        prev.map((s) =>
+          s.id === scrimId
+            ? {
+                ...s,
+                isJoined: false,
+                matchedTeam: null,
+                matchedParticipantIds: [],
+              }
+            : s
+        )
+      );
+      setLeaveSuccess("You have left this scrim.");
+    } catch {
+      setLeaveError("Unexpected error leaving scrim.");
+    } finally {
+      setLeaveLoadingId(null);
+    }
   }
 
   return (
@@ -417,20 +512,13 @@ export default function ScrimsClient({
             </div>
 
             {hostableTeams.length > 0 && (
-            <button
-              onClick={() => {
-                const defaultTeam = hostableTeams[0];
-                setCreateHostTeamId(defaultTeam?.id ?? null);
-                setCreateSelectedMemberIds(
-                  defaultTeam ? defaultTeam.memberships.map((m) => m.userId) : []
-                );
-                setCreateModalOpen(true);
-              }}
-              className="ml-auto text-xs px-3 py-2 rounded-full bg-emerald-600 hover:bg-emerald-500 text-white"
-            >
-              Create Scrim
-            </button>
-          )}
+              <button
+                onClick={openCreateModalWithDefaults}
+                className="ml-auto text-xs px-3 py-2 rounded-full bg-emerald-600 hover:bg-emerald-500 text-white"
+              >
+                Create Scrim
+              </button>
+            )}
           </div>
         </div>
 
@@ -468,6 +556,23 @@ export default function ScrimsClient({
           </div>
         )}
 
+        {(leaveError || leaveSuccess) && (
+          <div
+            className={`rounded-lg border px-4 py-3 text-sm flex items-start gap-3 ${
+              leaveError
+                ? "border-red-500 bg-red-950/80 text-red-100"
+                : "border-emerald-500 bg-emerald-950/80 text-emerald-100"
+            }`}
+          >
+            <div className="mt-0.5 text-xs font-semibold uppercase tracking-wide">
+              {leaveError ? "Leave Failed" : "Scrim Updated"}
+            </div>
+            <p className="text-xs sm:text-sm">
+              {leaveError || leaveSuccess}
+            </p>
+          </div>
+        )}
+
         <div className="grid gap-6 lg:grid-cols-2 items-start">
           <section className="space-y-4 rounded-xl border border-slate-800 bg-slate-950/40 p-4">
             <div className="flex items-center justify-between gap-4">
@@ -494,10 +599,13 @@ export default function ScrimsClient({
                   className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 rounded-lg border border-slate-800 bg-slate-950/60 px-3 py-2"
                 >
                   <div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex flex-wrap items-center gap-2">
                       <div className="font-medium text-slate-100">
                         {s.hostTeam.name} • Bo{s.bestOf} {s.gamemode}
                       </div>
+                      <span className="text-[10px] rounded-full bg-slate-900 border border-slate-600 px-2 py-0.5 text-slate-200">
+                        {formatTeamSize(s.teamSize)}
+                      </span>
                       {s.isHosted && (
                         <span className="text-[10px] uppercase tracking-wide rounded-full bg-emerald-900/60 border border-emerald-600 px-2 py-0.5 text-emerald-300">
                           Hosted
@@ -511,7 +619,7 @@ export default function ScrimsClient({
                     </div>
 
                     <div className="text-xs text-slate-400">
-                      Map: {s.map} · {formatDateTime(s.scheduledAt)}
+                      Map: {s.map} · {s.region}
                     </div>
                     <div className="mt-1 text-xs">
                       <span className="text-slate-400">Scrim Code: </span>
@@ -525,7 +633,7 @@ export default function ScrimsClient({
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-2">
+                  <div className="flex flex-wrap items-center gap-2 justify-end">
                     {s.isHosted ? (
                       <button
                         type="button"
@@ -542,16 +650,28 @@ export default function ScrimsClient({
                         Manage Scrim
                       </button>
                     ) : (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setDetailsScrim(s);
-                          setDetailsOpen(true);
-                        }}
-                        className="text-[11px] px-3 py-1 rounded-full bg-slate-800 hover:bg-slate-700 whitespace-nowrap"
-                      >
-                        View details
-                      </button>
+                      <>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setDetailsScrim(s);
+                            setDetailsOpen(true);
+                          }}
+                          className="text-[11px] px-3 py-1 rounded-full bg-slate-800 hover:bg-slate-700 whitespace-nowrap"
+                        >
+                          View details
+                        </button>
+                        {s.isJoined && (
+                          <button
+                            type="button"
+                            onClick={() => handleLeaveScrim(s.id)}
+                            disabled={leaveLoadingId === s.id}
+                            className="text-[11px] px-3 py-1 rounded-full bg-red-700 hover:bg-red-600 disabled:opacity-50 whitespace-nowrap"
+                          >
+                            {leaveLoadingId === s.id ? "Leaving..." : "Leave Scrim"}
+                          </button>
+                        )}
+                      </>
                     )}
 
                     <button
@@ -592,8 +712,7 @@ export default function ScrimsClient({
 
               {openScrims.map((s) => {
                 const isHostTeamInViewerTeams =
-                  !!viewerId &&
-                  viewerTeams.some((t) => t.id === s.hostTeam.id);
+                  !!viewerId && viewerTeamIds.includes(s.hostTeam.id);
 
                 const canRequest =
                   !!viewerId &&
@@ -606,8 +725,19 @@ export default function ScrimsClient({
                     className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 rounded-lg border border-slate-800 bg-slate-950/60 px-3 py-2"
                   >
                     <div>
-                      <div className="font-medium text-slate-100">
-                        {s.hostTeam.name} • Bo{s.bestOf} {s.gamemode}
+                      <div className="flex flex-wrap items-center gap-2">
+                        <div className="font-medium text-slate-100">
+                          {s.hostTeam.name} • Bo{s.bestOf} {s.gamemode}
+                        </div>
+                        <span className="text-[10px] rounded-full bg-slate-900 border border-slate-600 px-2 py-0.5 text-slate-200">
+                          {formatTeamSize(s.teamSize)}
+                        </span>
+                        <span className="text-[10px] rounded-full bg-slate-900 border border-slate-600 px-2 py-0.5 text-slate-200">
+                          {formatRuleset(s.ruleset)}
+                        </span>
+                        <span className="text-[10px] rounded-full bg-slate-900 border border-slate-600 px-2 py-0.5 text-slate-200">
+                          Region: {s.region}
+                        </span>
                       </div>
                       <div className="text-xs text-slate-400">
                         Map: {s.map} · {formatDateTime(s.scheduledAt)}
@@ -739,6 +869,26 @@ export default function ScrimsClient({
 
                   <div className="flex-1 space-y-1">
                     <label className="text-[11px] uppercase tracking-wide text-slate-400">
+                      Team Size
+                    </label>
+                    <select
+                      value={createTeamSize}
+                      onChange={(e) =>
+                        setCreateTeamSize(Number(e.target.value || 4))
+                      }
+                      className="w-full rounded-md bg-slate-950/60 border border-slate-700 px-3 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-cyan-500"
+                    >
+                      <option value={1}>1v1</option>
+                      <option value={2}>2v2</option>
+                      <option value={3}>3v3</option>
+                      <option value={4}>4v4</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className="flex gap-3">
+                  <div className="flex-1 space-y-1">
+                    <label className="text-[11px] uppercase tracking-wide text-slate-400">
                       Gamemode
                     </label>
                     <input
@@ -747,6 +897,24 @@ export default function ScrimsClient({
                       className="w-full rounded-md bg-slate-950/60 border border-slate-700 px-3 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-cyan-500"
                       placeholder="e.g. Hardpoint"
                     />
+                  </div>
+
+                  <div className="flex-1 space-y-1">
+                    <label className="text-[11px] uppercase tracking-wide text-slate-400">
+                      Ruleset
+                    </label>
+                    <select
+                      value={createRuleset}
+                      onChange={(e) =>
+                        setCreateRuleset(
+                          e.target.value === "CDL" ? "CDL" : "CUSTOM"
+                        )
+                      }
+                      className="w-full rounded-md bg-slate-950/60 border border-slate-700 px-3 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-cyan-500"
+                    >
+                      <option value="CDL">CDL</option>
+                      <option value="CUSTOM">Custom</option>
+                    </select>
                   </div>
                 </div>
 
@@ -827,20 +995,10 @@ export default function ScrimsClient({
                   </div>
                 )}
 
-                <div className="space-y-1">
-                  <label className="text-[11px] uppercase tracking-wide text-slate-400">
-                    Scheduled Time (optional)
-                  </label>
-                  <input
-                    type="datetime-local"
-                    value={createScheduledAt}
-                    onChange={(e) => setCreateScheduledAt(e.target.value)}
-                    className="w-full rounded-md bg-slate-950/60 border border-slate-700 px-3 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-cyan-500"
-                  />
-                  <p className="text-[10px] text-slate-500">
-                    If left blank, the scrim time can be decided later.
-                  </p>
-                </div>
+                <ScheduledTimePicker
+                  value={createScheduledAt}
+                  onChange={setCreateScheduledAt}
+                />
 
                 <button
                   onClick={handleCreateScrim}
@@ -1045,9 +1203,20 @@ export default function ScrimsClient({
                   Overview
                 </div>
                 <div className="mt-1">
-                  <div className="font-medium">
-                    {detailsScrim.hostTeam.name} • Bo{detailsScrim.bestOf}{" "}
-                    {detailsScrim.gamemode}
+                  <div className="font-medium flex flex-wrap items-center gap-2">
+                    <span>
+                      {detailsScrim.hostTeam.name} • Bo{detailsScrim.bestOf}{" "}
+                      {detailsScrim.gamemode}
+                    </span>
+                    <span className="text-[10px] rounded-full bg-slate-900 border border-slate-600 px-2 py-0.5 text-slate-200">
+                      {formatTeamSize(detailsScrim.teamSize)}
+                    </span>
+                    <span className="text-[10px] rounded-full bg-slate-900 border border-slate-600 px-2 py-0.5 text-slate-200">
+                      {formatRuleset(detailsScrim.ruleset)}
+                    </span>
+                    <span className="text-[10px] rounded-full bg-slate-900 border border-slate-600 px-2 py-0.5 text-slate-200">
+                      Region: {detailsScrim.region}
+                    </span>
                   </div>
                   <div className="text-xs text-slate-400">
                     Map: {detailsScrim.map} ·{" "}
@@ -1149,7 +1318,7 @@ export default function ScrimsClient({
                   <div className="space-y-1 max-h-40 overflow-y-auto pr-1 mt-2">
                     {detailsScrim.matchedParticipantIds &&
                     detailsScrim.matchedParticipantIds.length > 0 ? (
-                      detailsScrim.matchedTeam.memberships
+                      detailsScrim.matchedTeam!.memberships
                         .filter((m) =>
                           detailsScrim.matchedParticipantIds?.includes(m.userId)
                         )
@@ -1174,11 +1343,11 @@ export default function ScrimsClient({
                   </div>
                 </div>
               )}
-
             </div>
           </div>
         </div>
       )}
+
       {manageOpen && manageScrim && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/60"
@@ -1228,15 +1397,25 @@ export default function ScrimsClient({
             )}
 
             <div className="space-y-3 text-sm text-slate-100">
-              {/* Same overview as details modal */}
               <div>
                 <div className="text-xs text-slate-400 uppercase tracking-wide">
                   Overview
                 </div>
                 <div className="mt-1">
-                  <div className="font-medium">
-                    {manageScrim.hostTeam.name} • Bo{manageScrim.bestOf}{" "}
-                    {manageScrim.gamemode}
+                  <div className="font-medium flex flex-wrap items-center gap-2">
+                    <span>
+                      {manageScrim.hostTeam.name} • Bo{manageScrim.bestOf}{" "}
+                      {manageScrim.gamemode}
+                    </span>
+                    <span className="text-[10px] rounded-full bg-slate-900 border border-slate-600 px-2 py-0.5 text-slate-200">
+                      {formatTeamSize(manageScrim.teamSize)}
+                    </span>
+                    <span className="text-[10px] rounded-full bg-slate-900 border border-slate-600 px-2 py-0.5 text-slate-200">
+                      {formatRuleset(manageScrim.ruleset)}
+                    </span>
+                    <span className="text-[10px] rounded-full bg-slate-900 border border-slate-600 px-2 py-0.5 text-slate-200">
+                      Region: {manageScrim.region}
+                    </span>
                   </div>
                   <div className="text-xs text-slate-400">
                     Map: {manageScrim.map} ·{" "}

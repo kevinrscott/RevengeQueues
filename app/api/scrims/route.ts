@@ -23,6 +23,8 @@ export async function POST(req: Request) {
       map?: string;
       scheduledAt?: string | null;
       hostParticipantIds?: number[];
+      teamSize?: number;
+      ruleset?: "CDL" | "CUSTOM" | string; // allow raw string from body
     };
 
     try {
@@ -38,6 +40,8 @@ export async function POST(req: Request) {
       map,
       scheduledAt,
       hostParticipantIds,
+      teamSize,
+      ruleset,
     } = body;
 
     if (!hostTeamId || !bestOf || !gamemode?.trim() || !map?.trim()) {
@@ -96,17 +100,26 @@ export async function POST(req: Request) {
     const scheduledDate =
       scheduledAt && scheduledAt.trim() !== "" ? new Date(scheduledAt) : null;
 
+    // fallbacks in case client didn't send these
+    const normalizedTeamSize = teamSize && teamSize > 0 ? teamSize : 4;
+    const normalizedRuleset =
+      ruleset && ruleset.toUpperCase() === "CUSTOM" ? "CUSTOM" : "CDL";
+
     const scrim = await prisma.scrim.create({
       data: {
         hostTeamId: team.id,
         bestOf,
         gamemode: gamemode.trim(),
         map: map.trim(),
-        scrimCode: null, // 👈 no code yet; host will add it later via PATCH
+        scrimCode: null, // host sets later via PATCH
         scheduledAt: scheduledDate,
         status: "open",
         createdByUserId: viewerId,
         hostParticipantIds: sanitizedHostParticipantIds,
+        teamSize: normalizedTeamSize,
+        ruleset: normalizedRuleset,
+        // region: let Prisma/default handle it, or set explicitly if you want
+        // region: someRegionValue,
       },
       include: {
         hostTeam: {
@@ -133,10 +146,16 @@ export async function POST(req: Request) {
       bestOf: scrim.bestOf,
       gamemode: scrim.gamemode,
       map: scrim.map,
-      scrimCode: scrim.scrimCode, // will be null initially
+      scrimCode: scrim.scrimCode,
       scheduledAt: scrim.scheduledAt?.toISOString() ?? null,
       status: scrim.status,
       hostParticipantIds: scrim.hostParticipantIds,
+
+      // 🔽 new fields so client doesn't see undefined
+      teamSize: scrim.teamSize,
+      ruleset: scrim.ruleset,
+      region: scrim.region, // assuming your Prisma model has this
+
       hostTeam: {
         id: scrim.hostTeam.id,
         name: scrim.hostTeam.name,

@@ -48,6 +48,7 @@ export default async function ScrimsPage() {
         name: true,
         isRecruiting: true,
         logoUrl: true,
+        region: true,
         rank: {
           select: {
             id: true,
@@ -86,12 +87,16 @@ export default async function ScrimsPage() {
         status: true,
         createdAt: true,
         hostParticipantIds: true,
+        teamSize: true,
+        ruleset: true,
+        region: true,
         hostTeam: {
           select: {
             id: true,
             name: true,
             isRecruiting: true,
             logoUrl: true,
+            region: true,
             rank: {
               select: {
                 id: true,
@@ -126,6 +131,7 @@ export default async function ScrimsPage() {
                 name: true,
                 isRecruiting: true,
                 logoUrl: true,
+                region: true,
                 rank: {
                   select: {
                     id: true,
@@ -210,7 +216,9 @@ export default async function ScrimsPage() {
               (m) => m.userId === viewerId
             );
 
-            const acceptedRequest = s.requests[0] ?? null;
+            const acceptedRequest =
+              s.requests.find((r) => viewerTeamIds.includes(r.teamId)) ??
+              null;
 
             const matchedTeam = acceptedRequest
               ? {
@@ -288,6 +296,10 @@ export default async function ScrimsPage() {
               hostParticipantIds: s.hostParticipantIds ?? [],
               matchedTeam,
               matchedParticipantIds: acceptedRequest?.participantIds ?? [],
+              teamSize: s.teamSize,
+              ruleset: s.ruleset,
+              region: s.region ?? s.hostTeam.region,
+              joinedRequestId: acceptedRequest?.id ?? null,
             };
           })}
           viewerTeamsCount={viewerTeamsCount}
